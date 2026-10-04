@@ -1,17 +1,19 @@
 package main;
 
 
+import java.io.IOException;
+
 import javax.swing.JFrame;
 
 public class Main {
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
 
     JFrame window = new JFrame();
     window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     
     window.setResizable(true);
-    window.setTitle("Treasure Hunt");
+    window.setTitle("Dungeon Ninja");
 
     window.setMinimumSize(GamePanel.screenDimension);
     window.setMaximumSize(GamePanel.screenDimension);
@@ -24,7 +26,9 @@ public class Main {
     window.setLocationRelativeTo(null);
     window.setVisible(true);
 
-    gamePanel.setupGame();
+    gamePanel.setupGame(1);
     gamePanel.startGameThread();
+
+    
   }
 }

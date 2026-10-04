@@ -4,6 +4,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+
+
 import javax.swing.JPanel;
 import entity.Player;
 import object.SuperObject;
@@ -22,8 +24,8 @@ public class GamePanel extends JPanel implements Runnable{
   public static int screenHeight = maxScreenRow * tileSize;
 
   //WORLD SETTINGS
-  public final int maxWorldCol = 50;
-  public final int maxWorldRow = 50;
+  public final int maxWorldCol = 15;
+  public final int maxWorldRow = 15;
 
   //FPS
   int FPS = 120;
@@ -49,63 +51,15 @@ public class GamePanel extends JPanel implements Runnable{
     this.setFocusable(true);
   }
 
-  public void setupGame() {
-    aSetter.setObject();
-    playMusic(0);
+  public void setupGame(int level) {
+    aSetter.setObject(level);
+    player.setValues(level);
+    tileM.loadMap(level+".txt");
+
+    //playMusic(0);
   }
 
-  int zoomCounter = 0;
-  public void zoomInOut() {
-    int oldWorldWidth = tileSize * maxWorldCol;
-      zoomCounter++;
-    if(keyH.zoomActive == true) {
-      if(zoomCounter > 1) {                       //Zoom In and Out Animations
-        if(tileSize == 64) {tileSize = 62;zoomCounter =0;} 
-        else if(tileSize == 62) {tileSize = 60;zoomCounter=0;}
-        else if(tileSize == 60) {tileSize = 58;zoomCounter=0;}
-        else if(tileSize == 58) {tileSize = 56;zoomCounter=0;}    
-        else if(tileSize == 56) {tileSize = 54;zoomCounter=0;}
-        else if(tileSize == 54) {tileSize = 52;zoomCounter=0;}
-        else if(tileSize == 52) {tileSize = 50;zoomCounter=0;}
-        else if(tileSize == 50) {tileSize = 48;zoomCounter=0;}
-        else if(tileSize == 48) {tileSize = 46;zoomCounter=0;}
-        else if(tileSize == 46) {tileSize = 44;zoomCounter=0;}
-        else if(tileSize == 44) {tileSize = 42;zoomCounter=0;}
-      } 
-    } else if(keyH.zoomActive == false) {
-      if(zoomCounter > 1) {
-        if(tileSize == 42) {tileSize = 44;zoomCounter =0;} 
-        else if(tileSize == 44) {tileSize = 46;zoomCounter=0;}
-        else if(tileSize == 46) {tileSize = 48;zoomCounter=0;}
-        else if(tileSize == 48) {tileSize = 50;zoomCounter=0;}
-        else if(tileSize == 50) {tileSize = 52;zoomCounter=0;}
-        else if(tileSize == 52) {tileSize = 54;zoomCounter=0;}
-        else if(tileSize == 54) {tileSize = 56;zoomCounter=0;}
-        else if(tileSize == 56) {tileSize = 58;zoomCounter=0;}
-        else if(tileSize == 58) {tileSize = 60;zoomCounter=0;}
-        else if(tileSize == 60) {tileSize = 62;zoomCounter=0;}
-        else if(tileSize == 62) {tileSize = 64;zoomCounter=0;}
-      } 
-    }
-    int newWorldWidth = tileSize * maxWorldCol;
-    double multiplier = (double) newWorldWidth/oldWorldWidth;
-
-    double newPlayerWorldX = player.WorldX * multiplier;
-    double newPlayerWorldY = player.WorldY * multiplier;
-
-    for (int i = 0; i<obj.length; i++) {
-      if (obj[i] != null) {
-        obj[i].worldX *= multiplier;
-        obj[i].worldY *= multiplier;
-      }
-    } 
-
-    player.WorldX = newPlayerWorldX;
-    player.WorldY = newPlayerWorldY;
-
-    player.speed = ((double)newWorldWidth/800)* player.speedMultiplier; //speed definded here 
-  }
-
+ 
   public void startGameThread() {
     gameThread = new Thread(this);
     gameThread.start();

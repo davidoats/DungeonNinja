@@ -2,7 +2,8 @@ package main;
 
 import object.OBJ_Boots;
 import object.OBJ_Chest;
-import object.OBJ_Door;
+import object.OBJ_NextLevelDoor;
+import object.OBJ_PrevLevelDoor;
 import object.OBJ_Key;
 
 public class AssetSetter {
@@ -13,37 +14,20 @@ public class AssetSetter {
     this.gp = gp;
   }
 
-  public void setObject() {
-    gp.obj[0] = new OBJ_Key();
-    gp.obj[0].worldX = 23 *GamePanel.tileSize;
-    gp.obj[0].worldY = 7 *GamePanel.tileSize;
+  public void setObject(int level) {
+    for (int i = 0; i <gp.obj.length; i++) {}
+    try {
+    gp.obj[0] = new OBJ_NextLevelDoor();
+    gp.obj[0].worldX = Integer.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Door_X")) *GamePanel.tileSize;
+    gp.obj[0].worldY = Integer.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Door_Y")) *GamePanel.tileSize;
 
     gp.obj[1] = new OBJ_Key();
-    gp.obj[1].worldX = 23 *GamePanel.tileSize;
-    gp.obj[1].worldY = 40 *GamePanel.tileSize;
+    gp.obj[1].worldX = Integer.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Key_X")) *GamePanel.tileSize;
+    gp.obj[1].worldY = Integer.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Key_Y")) *GamePanel.tileSize;
 
-    gp.obj[4] = new OBJ_Key();
-    gp.obj[4].worldX =  37*GamePanel.tileSize;
-    gp.obj[4].worldY = 7 *GamePanel.tileSize;
-
-    gp.obj[2] = new OBJ_Chest();
-    gp.obj[2].worldX = 9 *GamePanel.tileSize;
-    gp.obj[2].worldY = 7 *GamePanel.tileSize;
-
-    gp.obj[3] = new OBJ_Door();
-    gp.obj[3].worldX = 10 *GamePanel.tileSize;
-    gp.obj[3].worldY = 11 *GamePanel.tileSize;
-
-    gp.obj[5] = new OBJ_Door();
-    gp.obj[5].worldX = 14 *GamePanel.tileSize;
-    gp.obj[5].worldY = 28 *GamePanel.tileSize;
-
-    gp.obj[6] = new OBJ_Door();
-    gp.obj[6].worldX = 8 *GamePanel.tileSize;
-    gp.obj[6].worldY = 20 *GamePanel.tileSize;
-
-    gp.obj[8] = new OBJ_Boots();
-    gp.obj[8].worldX =  37 *GamePanel.tileSize;
-    gp.obj[8].worldY = 42 *GamePanel.tileSize;
+    gp.obj[2] = new OBJ_PrevLevelDoor();
+    gp.obj[2].worldX = Integer.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Door2_X")) *GamePanel.tileSize;
+    gp.obj[2].worldY = Integer.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Door2_Y")) *GamePanel.tileSize;
+    } catch (Exception e) {}
   }
 }

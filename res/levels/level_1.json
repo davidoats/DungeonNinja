@@ -1,0 +1,16 @@
+{
+  "//" : "PLAYER",
+  "Player_WorldX": 9,
+  "Player_WorldY": 3,
+
+  "//" : "OBJECTS",
+  "Key_X" : "3",
+  "Key_Y" : "5",
+
+  "Door_X" : "2",
+  "Door_Y" : "13",
+
+  "Door2_X" : "",
+  "Door2_Y" : ""
+  
+ }

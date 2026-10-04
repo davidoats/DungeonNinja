@@ -16,6 +16,8 @@ public class Player extends Entity{
   GamePanel gp;
   KeyHandler keyH;
 
+public int currentLevel = 1;
+
   public final int screenX;
   public final int screenY;
   public int hasKey = 0;
@@ -32,16 +34,23 @@ public class Player extends Entity{
     solidAreaDefaultX = solidArea.x;
     solidAreaDefaultY = solidArea.y;
 
-    setDefaultValues();
+    setValues(0);
     getPlayerImage();
   }
 
-  public void setDefaultValues() {
-      WorldX = GamePanel.tileSize *23;
-      WorldY = GamePanel.tileSize *21;
-      //speed = 4;
-      speed = ((GamePanel.tileSize * gp.maxWorldCol)/800)* speedMultiplier;
+  public void setValues(int level) {
+    
+    if (level == 0) {
+      WorldX = GamePanel.tileSize *9;
+      WorldY = GamePanel.tileSize *3;
+      speed = ((GamePanel.tileSize * gp.maxWorldCol)/270)* speedMultiplier;
       direction = "down";
+    } else {
+      try {
+      WorldX = GamePanel.tileSize * Double.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Player_WorldX")); 
+      WorldY = GamePanel.tileSize * Double.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Player_WorldY")); 
+    } catch (Exception e) {e.printStackTrace();}
+    }
   }
 
   public void getPlayerImage() {
@@ -102,9 +111,7 @@ public class Player extends Entity{
         spriteCounter = 0;
       }
 
-      
-
-      gp.zoomInOut();
+    
   }
 
   public void interactObject(int i) {
@@ -113,27 +120,37 @@ public class Player extends Entity{
           String objectName = gp.obj[i].name;
 
           switch(objectName) {
+
             case "Key":
               hasKey++;
               gp.obj[i] = null;
               gp.playSE(1);
               gp.ui.showMessage("You got a key!");
               break;
-            case "Door":
+
+            case "NextLevelDoor":
               if (hasKey > 0) {
                 gp.obj[i] = null;
                 gp.playSE(4);
                 hasKey--;
-                gp.ui.showMessage("You've opened the door!");
+                gp.setupGame(++currentLevel);
+                
               } else {
                 gp.ui.showMessage("You need a key to enter!");
               }
               break;
+
+            case "PrevLevelDoor":
+              gp.playSE(4);
+              gp.setupGame(--currentLevel);
+              break;
+
             case "Chest":
               gp.ui.gameFinished = true;
               gp.stopMusic();
               gp.playSE(2);
               break;
+
             case "Boots":
               speedMultiplier = 1.25;
               gp.playSE(3);
