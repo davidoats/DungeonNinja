@@ -1,5 +1,9 @@
 package main;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Map;
+import object.SuperObject;
 import object.OBJ_Boots;
 import object.OBJ_Chest;
 import object.OBJ_NextLevelDoor;
@@ -15,19 +19,65 @@ public class AssetSetter {
   }
 
   public void setObject(int level) {
-    for (int i = 0; i <gp.obj.length; i++) {}
+
+    Arrays.fill(gp.obj, null);
+
     try {
-    gp.obj[0] = new OBJ_NextLevelDoor();
-    gp.obj[0].worldX = Integer.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Door_X")) *GamePanel.tileSize;
-    gp.obj[0].worldY = Integer.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Door_Y")) *GamePanel.tileSize;
+        Map<String, String> data = LevelHandler.getAllLvlData(String.valueOf(level));
 
-    gp.obj[1] = new OBJ_Key();
-    gp.obj[1].worldX = Integer.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Key_X")) *GamePanel.tileSize;
-    gp.obj[1].worldY = Integer.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Key_Y")) *GamePanel.tileSize;
+        int index = 0;
 
-    gp.obj[2] = new OBJ_PrevLevelDoor();
-    gp.obj[2].worldX = Integer.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Door2_X")) *GamePanel.tileSize;
-    gp.obj[2].worldY = Integer.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Door2_Y")) *GamePanel.tileSize;
-    } catch (Exception e) {}
-  }
+        for (String key : data.keySet()) {
+
+            if (!key.endsWith("_X")) {
+                continue;
+            }
+
+            String name = key.substring(0, key.length() - 2);
+
+            String xValue = data.get(name + "_X");
+            String yValue = data.get(name + "_Y");
+
+            // Skip objects with missing coordinates
+            if (xValue == null || yValue == null ||
+                xValue.isBlank() || yValue.isBlank()) {
+                continue;
+            }
+
+            SuperObject object = null;
+
+            switch (name) {
+                case "Key":
+                    object = new OBJ_Key();
+                    break;
+
+                case "Door":
+                    object = new OBJ_NextLevelDoor();
+                    break;
+
+                case "Door2":
+                    object = new OBJ_PrevLevelDoor();
+                    break;
+
+                default:
+                    System.out.println("Unknown object: " + name);
+                    continue;
+            }
+
+            object.worldX = Integer.parseInt(xValue) * GamePanel.tileSize;
+            object.worldY = Integer.parseInt(yValue) * GamePanel.tileSize;
+
+            if (index >= gp.obj.length) {
+                System.out.println("Object array is full!");
+                break;
+            }
+
+            gp.obj[index] = object;
+            index++;
+        }
+
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
 }

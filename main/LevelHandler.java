@@ -3,46 +3,49 @@ package main;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.io.IOException;
-
+import java.util.HashMap;
+import java.util.Map;
 
 public class LevelHandler {
 
-  public static String getLvlData(String levelNum, String key) throws IOException {
+    public static Map<String, String> getAllLvlData(String levelNum) throws IOException {
 
-    String path = "/res/levels/level_" + levelNum + ".json";
+        String path = "/res/levels/level_" + levelNum + ".json";
 
-String jsondata = null;
+        String jsondata;
 
-try (java.io.InputStream is = LevelHandler.class.getResourceAsStream(path)) {
-    if (is == null) {
-        throw new java.io.FileNotFoundException("Could not find resource file: " + path);
-    }
-    jsondata = new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-} catch (java.io.IOException e) {
-    e.printStackTrace();
-    // Handle error (e.g., load a default level or exit)
-}
-        
-    // Regex pattern to match "key" : "value" or "key" : value
-        String regex = "\"" + key + "\"\\s*:\\s*\"?([^,\"}]+)\"?";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.compile(regex).matcher(jsondata);
-        
-        if (matcher.find()) {
-            return matcher.group(1).trim();
+        try (java.io.InputStream is = LevelHandler.class.getResourceAsStream(path)) {
+            if (is == null) {
+                throw new java.io.FileNotFoundException("Could not find: " + path);
+            }
+
+            jsondata = new String(
+                is.readAllBytes(),
+                java.nio.charset.StandardCharsets.UTF_8
+            );
         }
 
-        
+        Map<String, String> data = new HashMap<>();
 
-        return jsondata; // Key not found
+        Pattern pattern = Pattern.compile(
+            "\"([^\"]+)\"\\s*:\\s*(?:\"([^\"]*)\"|(-?\\d+))"
+        );
 
-    
-        
+        Matcher matcher = pattern.matcher(jsondata);
 
-  }
-  
-  public void changeLvl(int l) throws IOException {
-    getLvlData(null, null);
-  }
+        while (matcher.find()) {
+            String key = matcher.group(1);
+            String value = matcher.group(2) != null
+                ? matcher.group(2)
+                : matcher.group(3);
 
+            data.put(key, value);
+        }
+
+        return data;
+    }
+
+    public static String getLvlData(String levelNum, String key) throws IOException {
+        return getAllLvlData(levelNum).get(key);
+    }
 }
