@@ -20,7 +20,7 @@ import combat.AttackAnimation;
 import combat.AnimationProfile;
 import combat.AttackType;
 import combat.SwordTrail;
-import java.awt.geom.Point2D;
+import combat.WeaponPose;
 
 import main.GamePanel;
 
@@ -44,6 +44,7 @@ public class Player extends Entity {
   public boolean attacking = false;
   private long lastAttackTime = 0;
   private AttackAnimation currentAttack;
+  private WeaponPose currentWeaponPose;
   private final SwordTrail swordTrail = new SwordTrail();
   private int comboIndex = 0;
   private long lastComboTime = 0;
@@ -189,6 +190,20 @@ public class Player extends Entity {
       facingDirection = direction;
     }
     // Otherwise, keep the current facing direction
+
+    // Calculate the weapon's current position
+
+    long currentTime = System.currentTimeMillis();
+
+    // Calculate the weapon's position
+    currentWeaponPose = calculateWeaponPose(currentTime);
+
+    // Apply damage
+    checkWeaponHit();
+
+    // Record the sword's movement
+    updateSwordTrail(currentTime);
+
   }
 
   public void interactObject(SuperObject object) {
@@ -240,6 +255,211 @@ public class Player extends Entity {
     }
   }
 
+  private WeaponPose calculateWeaponPose(long currentTime) {
+
+    if (!attacking || equippedWeapon == null ||
+        currentAttack == null) {
+      return null;
+    }
+
+    // Calculate animation progress
+    double progress = Math.max(0.0, Math.min(
+        1.0,
+        (double) (currentTime - lastAttackTime)
+            / currentAttack.duration));
+
+    // Player's center in world coordinates
+    double centerX = WorldX + gp.tileSize / 2.0;
+    double centerY = WorldY + gp.tileSize / 2.0;
+
+    double baseDistance = gp.tileSize * 0.3;
+    double handDistance = baseDistance;
+    double weaponAngle = swingAngle;
+
+    switch (currentAttack.type) {
+
+      case SLASH:
+        double start = Math.toRadians(currentAttack.startAngle);
+        double end = Math.toRadians(currentAttack.endAngle);
+
+        double swingProgress;
+
+        if (progress < 0.2) {
+          swingProgress = 0;
+        } else if (progress < 0.7) {
+          double t = (progress - 0.2) / 0.5;
+          swingProgress = t * t * (3.0 - 2.0 * t);
+        } else {
+          swingProgress = 1;
+        }
+
+        weaponAngle = swingAngle +
+            start + (end - start) * swingProgress;
+        break;
+
+      case THRUST:
+        weaponAngle = swingAngle;
+
+        double extension;
+
+        if (progress < 0.15) {
+          extension = 0;
+        } else if (progress < 0.45) {
+          double t = (progress - 0.15) / 0.30;
+          extension = 1 - Math.pow(1 - t, 3);
+        } else {
+          double t = Math.min(1.0,
+              (progress - 0.45) / 0.55);
+
+          extension = 1 - t * t * (3 - 2 * t);
+        }
+
+        // Keep the sword close to the player's hand
+        handDistance = baseDistance +
+            extension * gp.tileSize * 0.08;
+        break;
+
+      case OVERHEAD:
+        double overheadProgress;
+
+        if (progress < 0.4) {
+          overheadProgress = 0;
+        } else {
+          overheadProgress = Math.min(
+              1.0, (progress - 0.4) / 0.6);
+        }
+
+        weaponAngle = swingAngle + Math.toRadians(
+            currentAttack.startAngle +
+                (currentAttack.endAngle -
+                    currentAttack.startAngle) * overheadProgress);
+        break;
+    }
+
+    // Calculate weapon handle in world coordinates
+    double handX = centerX +
+        Math.cos(weaponAngle) * handDistance;
+
+    double handY = centerY +
+        Math.sin(weaponAngle) * handDistance;
+
+    // Sprite points upward by default
+    double rotation = weaponAngle + Math.PI / 2;
+
+    int weaponSize = 48;
+
+    // Calculate actual blade tip in world coordinates
+    java.awt.geom.Point2D.Double tip = weaponRenderer.getBladeTip(
+        equippedWeapon,
+        handX,
+        handY,
+        rotation,
+        weaponSize,
+        weaponSize);
+
+    // Calculate where the actual blade begins
+    java.awt.geom.Point2D.Double bladeBase = weaponRenderer.getBladeBase(
+        equippedWeapon,
+        handX,
+        handY,
+        rotation,
+        weaponSize,
+        weaponSize);
+
+    // Determine whether this attack can deal damage
+    boolean activeStrike = false;
+
+    switch (currentAttack.type) {
+      case SLASH:
+        activeStrike = progress >= 0.2 && progress <= 0.7;
+        break;
+
+      case THRUST:
+        activeStrike = progress >= 0.15 && progress <= 0.55;
+        break;
+
+      case OVERHEAD:
+        activeStrike = progress >= 0.4 && progress <= 0.8;
+        break;
+    }
+
+    return new WeaponPose(
+        handX,
+        handY,
+        bladeBase.x,
+        bladeBase.y,
+        tip.x,
+        tip.y,
+        rotation,
+        progress,
+        activeStrike);
+  }
+
+  /**
+   * Records the sword tip's movement during slashes.
+   */
+
+  private void updateSwordTrail(long currentTime) {
+    swordTrail.update(currentTime);
+
+    if (currentWeaponPose == null ||
+        currentAttack == null ||
+        currentAttack.type != AttackType.SLASH ||
+        !currentWeaponPose.activeStrike) {
+      return;
+    }
+
+    // Save the actual blade-tip position in world space
+    swordTrail.addPoint(
+        currentWeaponPose.tipX,
+        currentWeaponPose.tipY,
+        currentTime);
+  }
+
+  /**
+   * Checks whether the current weapon attack
+   * hits the training dummy.
+   */
+  private void checkWeaponHit() {
+
+    // Don't check collisions outside active attacks
+    if (currentWeaponPose == null ||
+        !currentWeaponPose.activeStrike ||
+        dummyHitThisAttack) {
+      return;
+    }
+
+    TrainingDummy dummy = gp.trainingDummy;
+
+    // Make sure the dummy exists and is alive
+    if (dummy == null || dummy.getHealth() <= 0) {
+      return;
+    }
+
+    // Get the dummy's hitbox in world coordinates
+    Rectangle hitbox = new Rectangle(
+        (int) dummy.WorldX + dummy.solidArea.x,
+        (int) dummy.WorldY + dummy.solidArea.y,
+        dummy.solidArea.width,
+        dummy.solidArea.height);
+
+    // Check only the actual blade, not the handle
+    boolean hit = WeaponCollision.bladeIntersects(
+        currentWeaponPose.bladeBaseX,
+        currentWeaponPose.bladeBaseY,
+        currentWeaponPose.tipX,
+        currentWeaponPose.tipY,
+        hitbox);
+
+    if (hit) {
+      dummy.takeDamage(10);
+
+      // Prevent this swing from damaging
+      // the same dummy multiple times
+      dummyHitThisAttack = true;
+    }
+  }
+
   public void updateAttack() {
     long currentTime = System.currentTimeMillis();
 
@@ -248,6 +468,7 @@ public class Player extends Entity {
         currentTime - lastAttackTime >= currentAttack.duration) {
 
       attacking = false;
+      currentWeaponPose = null;
     }
 
     // Check whether the player can begin another attack
@@ -282,11 +503,6 @@ public class Player extends Entity {
 
     // Advance to the next attack in the combo
     comboIndex = (comboIndex + 1) % profile.getComboLength();
-
-    System.out.println(
-        equippedWeapon.getName() +
-            " used " + currentAttack.type +
-            " (" + currentAttack.duration + " ms)");
   }
 
   public void faceMouse() {
@@ -345,198 +561,36 @@ public class Player extends Entity {
     g2.drawImage(image, screenX, screenY, GamePanel.tileSize, GamePanel.tileSize, null);
   }
 
-  public void drawSword(Graphics2D g2) {
+  public void drawWeaponPose(Graphics2D g2) {
 
-    if (!attacking || equippedWeapon == null || currentAttack == null) {
-      return;
-    }
-
-    // Player center on screen
-    double centerX = screenX + gp.tileSize / 2.0;
-    double centerY = screenY + gp.tileSize / 2.0;
-
-    // Animation progress (0.0 to 1.0)
-    long elapsed = System.currentTimeMillis() - lastAttackTime;
-
-    double progress = Math.max(0.0, Math.min(
-        1.0,
-        (double) elapsed / currentAttack.duration));
-
-    // Base distance from player to weapon handle
-    double baseDistance = gp.tileSize * 0.3;
-
-    // Default weapon position
-    double weaponAngle = swingAngle;
-    double handDistance = baseDistance;
-
-    switch (currentAttack.type) {
-
-      case SLASH:
-        // Read swing angles from the animation profile
-        double start = Math.toRadians(currentAttack.startAngle);
-        double end = Math.toRadians(currentAttack.endAngle);
-
-        double swingProgress;
-
-        if (progress < 0.2) {
-          // Windup: hold the weapon near its starting position
-          swingProgress = 0;
-        } else if (progress < 0.7) {
-          // Strike: sweep quickly through the attack
-          double t = (progress - 0.2) / 0.5;
-          swingProgress = t * t * (3.0 - 2.0 * t);
-        } else {
-          // Recovery: hold the finishing position
-          swingProgress = 1;
-        }
-
-        weaponAngle = swingAngle + start + (end - start) * swingProgress;
-        break;
-
-      case THRUST:
-        // Keep the sword aimed forward
-        weaponAngle = swingAngle;
-
-        double extension;
-
-        if (progress < 0.15) {
-          // Windup: hold sword close to player
-          extension = 0;
-        } else if (progress < 0.45) {
-          // Fast forward thrust
-          double t = (progress - 0.15) / 0.30;
-          extension = 1 - Math.pow(1 - t, 3);
-        } else {
-          // Slower withdrawal
-          double t = Math.min(1.0,
-              (progress - 0.45) / 0.55);
-          extension = 1 - t * t * (3 - 2 * t);
-        }
-
-        handDistance = baseDistance + extension * gp.tileSize * 0.08;
-        break;
-
-      case OVERHEAD:
-        // Slower windup followed by a quick strike
-        double overheadProgress;
-
-        if (progress < 0.4) {
-          overheadProgress = 0;
-        } else {
-          overheadProgress = (progress - 0.4) / 0.6;
-        }
-
-        weaponAngle = swingAngle +
-            Math.toRadians(
-                currentAttack.startAngle +
-                    (currentAttack.endAngle -
-                        currentAttack.startAngle) * overheadProgress);
-
-        break;
-    }
-
-    // Position weapon relative to player
-    double handX = centerX +
-        Math.cos(weaponAngle) * handDistance;
-
-    double handY = centerY +
-        Math.sin(weaponAngle) * handDistance;
-
-    // Sprite points upward by default
-    double weaponRotation = weaponAngle + Math.PI / 2;
-
-    int weaponSize = 48;
-
-    // Calculate sword tip in screen coordinates
-    Point2D.Double tip = weaponRenderer.getBladeTip(
-        equippedWeapon,
-        handX,
-        handY,
-        weaponRotation,
-        weaponSize,
-        weaponSize);
-
-    // Calculate the camera offset
+    // Convert weapon world coordinates to screen coordinates
     double cameraX = WorldX - screenX;
     double cameraY = WorldY - screenY;
 
-    // Convert sword tip from screen to world coordinates
-    double tipWorldX = tip.x + cameraX;
-    double tipWorldY = tip.y + cameraY;
-
-    // Check whether the active sword attack hits the dummy
-    if (!dummyHitThisAttack &&
-        gp.trainingDummy != null &&
-        gp.trainingDummy.getHealth() > 0) {
-
-      boolean activeStrike = false;
-
-      // Only deal damage during the actual attack motion
-      switch (currentAttack.type) {
-        case SLASH:
-          activeStrike = progress >= 0.2 && progress <= 0.7;
-          break;
-
-        case THRUST:
-          activeStrike = progress >= 0.15 && progress <= 0.55;
-          break;
-
-        case OVERHEAD:
-          activeStrike = progress >= 0.4 && progress <= 0.8;
-          break;
-      }
-
-      if (activeStrike) {
-
-        // Convert weapon handle position to world coordinates
-        double handleWorldX = handX + cameraX;
-        double handleWorldY = handY + cameraY;
-
-        Rectangle dummyHitbox = getDummyHitbox();
-
-        if (WeaponCollision.bladeIntersects(
-            handleWorldX,
-            handleWorldY,
-            tipWorldX,
-            tipWorldY,
-            dummyHitbox)) {
-
-          gp.trainingDummy.takeDamage(10);
-
-          // Prevent multiple hits during the same attack
-          dummyHitThisAttack = true;
-        }
-      }
-    }
-
-    long currentTime = System.currentTimeMillis();
-
-    // Record the blade tip during the active slash
-    if (currentAttack.type == AttackType.SLASH &&
-        progress >= 0.2 && progress <= 0.7) {
-
-      swordTrail.addPoint(
-          tipWorldX,
-          tipWorldY,
-          currentTime);
-    }
-
-    // Draw the trail using the current camera position
+    // Draw the sword's recent movement trail
     swordTrail.draw(
         g2,
         cameraX,
         cameraY,
-        currentTime);
+        System.currentTimeMillis());
 
-    // Draw weapon
+    if (currentWeaponPose == null ||
+        equippedWeapon == null) {
+      return;
+    }
+
+    double handScreenX = currentWeaponPose.handleX - cameraX;
+    double handScreenY = currentWeaponPose.handleY - cameraY;
+
+    // Draw the weapon using its calculated pose
     weaponRenderer.draw(
         g2,
         equippedWeapon,
-        handX,
-        handY,
-        weaponRotation,
-        weaponSize,
-        weaponSize);
+        handScreenX,
+        handScreenY,
+        currentWeaponPose.rotation,
+        48,
+        48);
   }
 
 }

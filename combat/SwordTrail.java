@@ -38,6 +38,16 @@ public class SwordTrail {
         }
     }
 
+    /**
+     * Removes trail points that have expired.
+     */
+    public void update(long currentTime) {
+        while (!points.isEmpty() &&
+                currentTime - points.peekFirst().time > TRAIL_DURATION) {
+            points.removeFirst();
+        }
+    }
+
     public void draw(Graphics2D g2, double cameraX, double cameraY,
             long time) {
 

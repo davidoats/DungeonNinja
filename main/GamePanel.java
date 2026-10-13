@@ -12,6 +12,7 @@ import entity.Player;
 import object.SuperObject;
 import tile.TileManager;
 import entity.TrainingDummy;
+import combat.DamageNumberManager;
 
 public class GamePanel extends JPanel implements Runnable {
 
@@ -48,6 +49,7 @@ public class GamePanel extends JPanel implements Runnable {
   Sound se = new Sound();
 
   public TrainingDummy trainingDummy;
+  public final DamageNumberManager damageNumbers = new DamageNumberManager();
 
   public GamePanel() {
     this.setPreferredSize(screenDimension);
@@ -108,6 +110,7 @@ public class GamePanel extends JPanel implements Runnable {
 
   public void update() {
     player.update();
+    damageNumbers.update();
 
   }
 
@@ -143,9 +146,17 @@ public class GamePanel extends JPanel implements Runnable {
       trainingDummy.draw(g2);
     }
 
+
+      double cameraX = player.WorldX - player.screenX;
+      double cameraY = player.WorldY - player.screenY;
+
+      // Draw floating damage numbers above the game world
+      damageNumbers.draw(g2, cameraX, cameraY);
+
+
     // Draw player & Weapon
     player.draw(g2);
-    player.drawSword(g2);
+    player.drawWeaponPose(g2);
 
     // Draw UI
     ui.draw(g2);

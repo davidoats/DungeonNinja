@@ -80,4 +80,24 @@ public class WeaponRenderer {
         y + rotatedY);
   }
 
+  public Point2D.Double getBladeBase(
+      Weapon weapon,
+      double x, double y,
+      double angle,
+      int width, int height) {
+
+    double localX = (weapon.getBladeBaseX() - 0.5) * width;
+    double localY = (weapon.getBladeBaseY() - 1.0) * height;
+
+    double rotatedX = localX * Math.cos(angle) -
+        localY * Math.sin(angle);
+
+    double rotatedY = localX * Math.sin(angle) +
+        localY * Math.cos(angle);
+
+    return new Point2D.Double(
+        x + rotatedX,
+        y + rotatedY);
+  }
+
 }

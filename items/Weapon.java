@@ -16,6 +16,8 @@ public class Weapon {
   private final String name;
   private final double tipX;
   private final double tipY;
+  private final double bladeBaseX;
+  private final double bladeBaseY;
   private final AnimationProfile animationProfile;
   private final BufferedImage sprite;
 
@@ -27,7 +29,10 @@ public class Weapon {
    * @param sprite           Image used to draw the weapon
    */
 
-  public Weapon(String name, AnimationProfile animationProfile, BufferedImage sprite, double tipX, double tipY) {
+  public Weapon(String name, AnimationProfile animationProfile,
+      BufferedImage sprite,
+      double tipX, double tipY,
+      double bladeBaseX, double bladeBaseY) {
 
     if (name == null || name.isBlank()) {
       throw new IllegalArgumentException("Weapon needs a name");
@@ -49,6 +54,16 @@ public class Weapon {
           "Weapon tip coordinates must be between 0 and 1");
     }
 
+    if (!Double.isFinite(bladeBaseX) ||
+        !Double.isFinite(bladeBaseY) ||
+        bladeBaseX < 0 || bladeBaseX > 1 ||
+        bladeBaseY < 0 || bladeBaseY > 1) {
+      throw new IllegalArgumentException(
+          "Blade base coordinates must be between 0 and 1");
+    }
+
+    this.bladeBaseX = bladeBaseX;
+    this.bladeBaseY = bladeBaseY;
     this.name = name;
     this.animationProfile = animationProfile;
     this.sprite = sprite;
@@ -62,6 +77,14 @@ public class Weapon {
 
   public double getTipY() {
     return tipY;
+  }
+
+  public double getBladeBaseX() {
+    return bladeBaseX;
+  }
+
+  public double getBladeBaseY() {
+    return bladeBaseY;
   }
 
   public String getName() {

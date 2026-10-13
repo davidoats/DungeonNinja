@@ -17,6 +17,9 @@ public class TrainingDummy extends Entity {
     // Health
     private final int maxHealth = 100;
     private int health = maxHealth;
+    // Damage flash
+    private long lastDamageTime = 0;
+    private static final long DAMAGE_FLASH_DURATION = 150;
 
     /**
      * Creates a training dummy at a world position.
@@ -51,7 +54,15 @@ public class TrainingDummy extends Entity {
         int screenY = (int) (WorldY - gp.player.WorldY + gp.player.screenY);
 
         // Dummy body
-        g2.setColor(new Color(150, 100, 55));
+
+        // Flash red when hit
+        if (isDamageFlashing()) {
+            g2.setColor(new Color(255, 70, 70));
+        } else {
+            g2.setColor(new Color(150, 100, 55));
+        }
+
+        // Draw dummy body
         g2.fillRect(
                 screenX + GamePanel.tileSize / 4,
                 screenY + GamePanel.tileSize / 4,
@@ -104,7 +115,17 @@ public class TrainingDummy extends Entity {
             return;
         }
 
+        int actualDamage = Math.min(damage, health);
         health = Math.max(0, health - damage);
+
+        // Create floating damage number above the dummy
+        gp.damageNumbers.add(
+                actualDamage,
+                WorldX + GamePanel.tileSize / 2.0,
+                WorldY);
+
+        // Start damage flash
+        lastDamageTime = System.currentTimeMillis();
 
         System.out.println(
                 "Training Dummy HP: " + health + "/" + maxHealth);
@@ -116,6 +137,15 @@ public class TrainingDummy extends Entity {
 
     public int getMaxHealth() {
         return maxHealth;
+    }
+
+    /**
+     * Returns true while the dummy is flashing from damage.
+     */
+    private boolean isDamageFlashing() {
+
+        return lastDamageTime != 0 &&
+                System.currentTimeMillis() - lastDamageTime < DAMAGE_FLASH_DURATION;
     }
 
 }
