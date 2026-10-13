@@ -24,8 +24,7 @@ public class LevelHandler {
             }
 
             InputStreamReader reader = new InputStreamReader(
-                is, StandardCharsets.UTF_8
-            );
+                    is, StandardCharsets.UTF_8);
 
             return JsonParser.parseReader(reader).getAsJsonObject();
         }

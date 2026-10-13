@@ -1,6 +1,5 @@
 package main;
 
-
 import java.io.IOException;
 
 import javax.swing.JFrame;
@@ -11,7 +10,7 @@ public class Main {
 
     JFrame window = new JFrame();
     window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    
+
     window.setResizable(true);
     window.setTitle("Dungeon Ninja");
 
@@ -29,6 +28,5 @@ public class Main {
     gamePanel.setupGame(1);
     gamePanel.startGameThread();
 
-    
   }
 }

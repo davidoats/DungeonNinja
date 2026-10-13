@@ -4,7 +4,7 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 public class Entity {
-  
+
   public double WorldX, WorldY;
   public double speed;
 
