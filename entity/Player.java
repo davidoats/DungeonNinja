@@ -1,13 +1,18 @@
 package entity;
 
 import main.KeyHandler;
+import main.LevelHandler;
+import object.SuperObject;
 
+import com.google.gson.JsonObject;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
+
+
 
 import main.GamePanel;
 
@@ -47,8 +52,9 @@ public int currentLevel = 1;
       direction = "down";
     } else {
       try {
-      WorldX = GamePanel.tileSize * Double.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Player_WorldX")); 
-      WorldY = GamePanel.tileSize * Double.valueOf(main.LevelHandler.getLvlData(String.valueOf(level), "Player_WorldY")); 
+      JsonObject playerData = LevelHandler.getPlayer(String.valueOf(level));
+      WorldX = playerData.get("WorldX").getAsDouble() * GamePanel.tileSize;
+      WorldY = playerData.get("WorldY").getAsDouble() * GamePanel.tileSize; 
     } catch (Exception e) {e.printStackTrace();}
     }
   }
@@ -83,8 +89,8 @@ public int currentLevel = 1;
         collisionOn = false;
       gp.cChecker.checkTile(this);
 
-      int objIndex = gp.cChecker.checkObject(this, true);
-      interactObject(objIndex);
+      SuperObject object = gp.cChecker.checkObject(this, true);
+      interactObject(object);
 
 
       if(collisionOn == false) {
@@ -114,55 +120,50 @@ public int currentLevel = 1;
     
   }
 
-  public void interactObject(int i) {
-        if (i != 999) {
+  public void interactObject(SuperObject object) {
+    if (object == null) {
+      return;
+    }
           
-          String objectName = gp.obj[i].name;
+    switch (object.name) {
+      case "Key":
+        hasKey++;
+        synchronized (gp.objLock) {gp.obj.remove(object);}
+        gp.playSE(1);
+        gp.ui.showMessage("You got a key!");
+        break;
 
-          switch(objectName) {
-
-            case "Key":
-              hasKey++;
-              gp.obj[i] = null;
-              gp.playSE(1);
-              gp.ui.showMessage("You got a key!");
-              break;
-
-            case "NextLevelDoor":
-              if (hasKey > 0) {
-                gp.obj[i] = null;
-                gp.playSE(4);
-                hasKey--;
-                gp.setupGame(++currentLevel);
-                
-              } else {
-                gp.ui.showMessage("You need a key to enter!");
-              }
-              break;
-
-            case "PrevLevelDoor":
-              gp.playSE(4);
-              gp.setupGame(--currentLevel);
-              break;
-
-            case "Chest":
-              gp.ui.gameFinished = true;
-              gp.stopMusic();
-              gp.playSE(2);
-              break;
-
-            case "Boots":
-              speedMultiplier = 1.25;
-              gp.playSE(3);
-              gp.obj[i] =null;
-              break;
-          }
+      case "NextLevelDoor":
+        if (hasKey > 0) {
+          synchronized (gp.objLock) {gp.obj.remove(object);}
+          gp.playSE(4);
+          hasKey--;
+          gp.setupGame(++currentLevel);
+        } else {
+          gp.ui.showMessage("You need a key to enter!");
         }
-      }
+        break;
 
+      case "PrevLevelDoor":
+        gp.playSE(4);
+        gp.setupGame(--currentLevel);
+        break;
+
+      case "Chest":
+        gp.ui.gameFinished = true;
+        gp.stopMusic();
+        gp.playSE(2);
+        break;
+
+      case "Boots":
+        speedMultiplier = 1.25;
+        gp.playSE(3);
+        synchronized (gp.objLock) {gp.obj.remove(object);}
+        break;
+    }
+  }
+   
   public void draw(Graphics2D g2) {
-   // g2.setColor(Color.white);
-   // g2.fillRect(x, y, GamePanel.tileSize, GamePanel.tileSize);
 
    BufferedImage image = null;
 

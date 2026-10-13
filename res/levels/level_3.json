@@ -1,16 +1,11 @@
 {
-  "//" : "PLAYER",
-  "Player_WorldX": 13,
-  "Player_WorldY": 6,
+  "Player": {
+    "WorldX": 9,
+    "WorldY": 3
+  },
 
-  "//" : "OBJECTS",
-  "Key_X" : "",
-  "Key_Y" : "",
-
-  "Door_X" : "",
-  "Door_Y" : "",
-
-  "Door2_X" : "11",
-  "Door2_Y" : "11"
-  
- }
+  "Objects": [
+    {"type": "Key", "x": 3, "y": 5},
+    {"type": "NextLevelDoor", "x": 2, "y": 13}
+  ]
+}

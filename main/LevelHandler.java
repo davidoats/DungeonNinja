@@ -1,51 +1,43 @@
+
 package main;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
+
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 public class LevelHandler {
 
-    public static Map<String, String> getAllLvlData(String levelNum) throws IOException {
+    // Read and return the entire level JSON
+    public static JsonObject getLevel(String levelNum) throws IOException {
 
         String path = "/res/levels/level_" + levelNum + ".json";
 
-        String jsondata;
+        try (InputStream is = LevelHandler.class.getResourceAsStream(path)) {
 
-        try (java.io.InputStream is = LevelHandler.class.getResourceAsStream(path)) {
             if (is == null) {
-                throw new java.io.FileNotFoundException("Could not find: " + path);
+                throw new IOException("Could not find level file: " + path);
             }
 
-            jsondata = new String(
-                is.readAllBytes(),
-                java.nio.charset.StandardCharsets.UTF_8
+            InputStreamReader reader = new InputStreamReader(
+                is, StandardCharsets.UTF_8
             );
+
+            return JsonParser.parseReader(reader).getAsJsonObject();
         }
-
-        Map<String, String> data = new HashMap<>();
-
-        Pattern pattern = Pattern.compile(
-            "\"([^\"]+)\"\\s*:\\s*(?:\"([^\"]*)\"|(-?\\d+))"
-        );
-
-        Matcher matcher = pattern.matcher(jsondata);
-
-        while (matcher.find()) {
-            String key = matcher.group(1);
-            String value = matcher.group(2) != null
-                ? matcher.group(2)
-                : matcher.group(3);
-
-            data.put(key, value);
-        }
-
-        return data;
     }
 
-    public static String getLvlData(String levelNum, String key) throws IOException {
-        return getAllLvlData(levelNum).get(key);
+    // Return the objects array from the JSON
+    public static JsonArray getObjects(String levelNum) throws IOException {
+        return getLevel(levelNum).getAsJsonArray("Objects");
+    }
+
+    // Return the player data from the JSON
+    public static JsonObject getPlayer(String levelNum) throws IOException {
+        return getLevel(levelNum).getAsJsonObject("Player");
     }
 }

@@ -4,7 +4,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JPanel;
 import entity.Player;
@@ -39,7 +40,8 @@ public class GamePanel extends JPanel implements Runnable{
   KeyHandler keyH = new KeyHandler(this);
   Thread gameThread;
   public Player player = new Player(this,keyH);
-  public SuperObject obj[] = new SuperObject[10];
+  public ArrayList<SuperObject> obj = new ArrayList<>();
+  public final Object objLock = new Object();
   Sound music = new Sound();
   Sound se = new Sound();
 
@@ -100,27 +102,37 @@ public class GamePanel extends JPanel implements Runnable{
       player.update();
 
   }
+ 
 
-  public void paintComponent(Graphics g) {
+// Safely create a copy of the object list
+public List<SuperObject> getObjectSnapshot() {
+    synchronized (objLock) {
+        return new ArrayList<>(obj);
+    }
+}
+
+@Override
+public void paintComponent(Graphics g) {
 
     super.paintComponent(g);
 
-    Graphics2D g2 = (Graphics2D)g;
+    Graphics2D g2 = (Graphics2D) g;
 
+    // Draw tiles
     tileM.draw(g2);
-    
-    for(int i =0; i<obj.length; i++) {
-      if (obj[i] != null) {
-        obj[i].draw(g2, this);
-      }
+
+    // Draw objects from a safe snapshot
+    for (SuperObject object : getObjectSnapshot()) {
+        object.draw(g2, this);
     }
 
+    // Draw player
     player.draw(g2);
 
+    // Draw UI
     ui.draw(g2);
-    
-    g2.dispose();
-  }
+}
+
 
   public void playMusic(int i) {
     music.setFile(i);
@@ -136,4 +148,8 @@ public class GamePanel extends JPanel implements Runnable{
     se.setFile(i);
     se.play();
   }
+
+  
 }
+
+

@@ -1,8 +1,9 @@
 package main;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Map;
 import object.SuperObject;
 import object.OBJ_Boots;
 import object.OBJ_Chest;
@@ -18,66 +19,65 @@ public class AssetSetter {
     this.gp = gp;
   }
 
-  public void setObject(int level) {
+public void setObject(int level) {
 
-    Arrays.fill(gp.obj, null);
+    // Remove objects from the previous level
+    synchronized (gp.objLock) {
+    gp.obj.clear();
+}
 
     try {
-        Map<String, String> data = LevelHandler.getAllLvlData(String.valueOf(level));
+        JsonArray objects = LevelHandler.getObjects(String.valueOf(level));
 
-        int index = 0;
+        for (JsonElement element : objects) {
 
-        for (String key : data.keySet()) {
+            JsonObject data = element.getAsJsonObject();
 
-            if (!key.endsWith("_X")) {
-                continue;
-            }
+            String type = data.get("type").getAsString();
+            double x = data.get("x").getAsDouble();
+            double y = data.get("y").getAsDouble();
 
-            String name = key.substring(0, key.length() - 2);
+            SuperObject object;
 
-            String xValue = data.get(name + "_X");
-            String yValue = data.get(name + "_Y");
-
-            // Skip objects with missing coordinates
-            if (xValue == null || yValue == null ||
-                xValue.isBlank() || yValue.isBlank()) {
-                continue;
-            }
-
-            SuperObject object = null;
-
-            switch (name) {
+            switch (type) {
                 case "Key":
                     object = new OBJ_Key();
                     break;
 
-                case "Door":
+                case "NextLevelDoor":
                     object = new OBJ_NextLevelDoor();
                     break;
 
-                case "Door2":
+                case "PrevLevelDoor":
                     object = new OBJ_PrevLevelDoor();
                     break;
 
+                case "Boots":
+                    object = new OBJ_Boots();
+                    break;
+
+                case "Chest":
+                    object = new OBJ_Chest();
+                    break;
+
                 default:
-                    System.out.println("Unknown object: " + name);
+                    System.out.println("Unknown object: " + type);
                     continue;
             }
 
-            object.worldX = Integer.parseInt(xValue) * GamePanel.tileSize;
-            object.worldY = Integer.parseInt(yValue) * GamePanel.tileSize;
+            // Position object
+            object.worldX = x * GamePanel.tileSize;
+            object.worldY = y * GamePanel.tileSize;
 
-            if (index >= gp.obj.length) {
-                System.out.println("Object array is full!");
-                break;
+            // Add object to dynamic list
+            synchronized (gp.objLock) {
+              gp.obj.add(object);
             }
-
-            gp.obj[index] = object;
-            index++;
         }
 
     } catch (IOException e) {
         e.printStackTrace();
     }
 }
+
 }
