@@ -9,18 +9,15 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 
-import items.Weapon;
-import items.WeaponLoader;
-import combat.WeaponRenderer;
-import combat.WeaponCollision;
-import combat.AttackAnimation;
-import combat.AnimationProfile;
-import combat.AttackType;
-import combat.SwordTrail;
-import combat.WeaponPose;
+import items.*;
+import combat.*;
+import entity.monsters.*;
+import entity.*;
 
 import main.GamePanel;
 
@@ -49,22 +46,8 @@ public class Player extends Entity {
   private int comboIndex = 0;
   private long lastComboTime = 0;
 
+  private final Set<Monster> monstersHitThisAttack = new HashSet<>();
   private boolean dummyHitThisAttack = false;
-
-  private Rectangle getDummyHitbox() {
-
-    if (gp.trainingDummy == null) {
-      return null;
-    }
-
-    TrainingDummy dummy = gp.trainingDummy;
-
-    return new Rectangle(
-        (int) dummy.WorldX + dummy.solidArea.x,
-        (int) dummy.WorldY + dummy.solidArea.y,
-        dummy.solidArea.width,
-        dummy.solidArea.height);
-  }
 
   private static final long COMBO_RESET_TIME = 1500;
   public Weapon equippedWeapon;
@@ -201,10 +184,63 @@ public class Player extends Entity {
     // Apply damage
     checkWeaponHit();
 
+    // Apply Damage to Zombie
+    checkMonsterHits();
+
     // Record the sword's movement
     updateSwordTrail(currentTime);
 
   }
+
+  /**
+   * Checks whether the current weapon hits the zombie.
+   */
+  
+/**
+ * Checks whether the current attack hits any monsters.
+ * Each monster can only be hit once per attack.
+ */
+private void checkMonsterHits() {
+
+    if (currentWeaponPose == null ||
+        !currentWeaponPose.activeStrike) {
+        return;
+    }
+
+    for (Monster monster : gp.monsters) {
+
+        // Skip dead monsters or monsters already hit
+        if (!monster.isAlive() ||
+            monstersHitThisAttack.contains(monster)) {
+            continue;
+        }
+
+        // Get the monster's world-space hitbox
+        Rectangle hitbox = new Rectangle(
+            (int) monster.WorldX + monster.solidArea.x,
+            (int) monster.WorldY + monster.solidArea.y,
+            monster.solidArea.width,
+            monster.solidArea.height
+        );
+
+        // Test the actual blade against the monster
+        boolean hit = WeaponCollision.bladeIntersects(
+            currentWeaponPose.bladeBaseX,
+            currentWeaponPose.bladeBaseY,
+            currentWeaponPose.tipX,
+            currentWeaponPose.tipY,
+            hitbox
+        );
+
+        if (hit) {
+            monster.takeDamage(10);
+
+            // Prevent another hit until the next attack
+            monstersHitThisAttack.add(monster);
+        }
+    }
+}
+
 
   public void interactObject(SuperObject object) {
     if (object == null) {
@@ -495,6 +531,7 @@ public class Player extends Entity {
 
     // Allow the next attack to damage the dummy once
     dummyHitThisAttack = false;
+    monstersHitThisAttack.clear();
 
     // Start the attack
     attacking = true;

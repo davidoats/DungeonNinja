@@ -127,8 +127,6 @@ public class TrainingDummy extends Entity {
         // Start damage flash
         lastDamageTime = System.currentTimeMillis();
 
-        System.out.println(
-                "Training Dummy HP: " + health + "/" + maxHealth);
     }
 
     public int getHealth() {

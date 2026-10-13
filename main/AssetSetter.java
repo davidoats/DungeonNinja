@@ -4,12 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.io.IOException;
-import object.SuperObject;
-import object.OBJ_Boots;
-import object.OBJ_Chest;
-import object.OBJ_NextLevelDoor;
-import object.OBJ_PrevLevelDoor;
-import object.OBJ_Key;
+import object.*;
 
 public class AssetSetter {
 

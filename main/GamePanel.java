@@ -4,14 +4,14 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import javax.swing.JPanel;
-import entity.Player;
+import entity.*;
+import entity.monsters.*;
+
 import object.SuperObject;
 import tile.TileManager;
-import entity.TrainingDummy;
 import combat.DamageNumberManager;
 
 public class GamePanel extends JPanel implements Runnable {
@@ -48,7 +48,14 @@ public class GamePanel extends JPanel implements Runnable {
   Sound music = new Sound();
   Sound se = new Sound();
 
+
+
+  //Replacing
   public TrainingDummy trainingDummy;
+
+// With
+  public final List<Monster> monsters = new ArrayList<>();
+
   public final DamageNumberManager damageNumbers = new DamageNumberManager();
 
   public GamePanel() {
@@ -66,6 +73,15 @@ public class GamePanel extends JPanel implements Runnable {
     player.setValues(level);
     tileM.loadMap(level + ".txt");
     trainingDummy = new TrainingDummy(this, GamePanel.tileSize * 9, GamePanel.tileSize * 11);
+    
+    // Clear monsters from the previous level
+    monsters.clear();
+
+    // Spawn our first zombie
+    monsters.add(new Zombie( this, GamePanel.tileSize * 5, GamePanel.tileSize * 11));
+
+    // Second zombie for testing
+    monsters.add(new Zombie( this, GamePanel.tileSize * 7, GamePanel.tileSize * 7));
 
     // playMusic(0);
   }
@@ -112,6 +128,13 @@ public class GamePanel extends JPanel implements Runnable {
     player.update();
     damageNumbers.update();
 
+    // Update all living monsters
+    for (Monster monster : monsters) {
+      if (monster.isAlive()) {
+        monster.update();
+      }
+    }
+
   }
 
   // Safely create a copy of the object list
@@ -153,6 +176,18 @@ public class GamePanel extends JPanel implements Runnable {
       // Draw floating damage numbers above the game world
       damageNumbers.draw(g2, cameraX, cameraY);
 
+    
+    // Draw enemies
+    // Draw all living monsters
+    for (Monster monster : monsters) {
+        if (monster.isAlive()) {
+            monster.draw(g2);
+        }
+    }
+
+// Draw player and weapon
+player.draw(g2);
+player.drawWeaponPose(g2);
 
     // Draw player & Weapon
     player.draw(g2);
