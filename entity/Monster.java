@@ -5,6 +5,8 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import main.GamePanel;
+import entity.definitions.MonsterDefinition;
+import entity.ai.MonsterNavigator;
 
 /**
  * Base class for monsters in DungeonNinja.
@@ -15,6 +17,8 @@ import main.GamePanel;
 public abstract class Monster extends Entity {
 
   protected final GamePanel gp;
+  protected final MonsterDefinition definition;
+  protected final MonsterNavigator navigator = new MonsterNavigator();
 
   protected int maxHealth;
   protected int health;
@@ -25,36 +29,99 @@ public abstract class Monster extends Entity {
   protected static final long DAMAGE_FLASH_DURATION = 150;
 
   /**
-   * Creates a monster at a specified world position.
+   * Creates a monster using a reusable definition.
    *
-   * @param gp           Game panel
-   * @param worldX       Starting world X coordinate
-   * @param worldY       Starting world Y coordinate
-   * @param maxHealth    Monster's maximum health
-   * @param attackDamage Damage dealt by the monster
+   * @param gp         Game panel
+   * @param definition Monster type and attributes
+   * @param worldX     Starting world X coordinate
+   * @param worldY     Starting world Y coordinate
    */
-  public Monster(GamePanel gp, double worldX, double worldY,
-      int maxHealth, int attackDamage) {
+  public Monster(
+      GamePanel gp,
+      MonsterDefinition definition,
+      double worldX,
+      double worldY) {
 
     this.gp = gp;
+    this.definition = definition;
 
-    WorldX = worldX;
-    WorldY = worldY;
+    this.WorldX = worldX;
+    this.WorldY = worldY;
 
-    this.maxHealth = maxHealth;
+    // Initialize attributes from definition
+    this.maxHealth = definition.getMaxHealth();
     this.health = maxHealth;
-    this.attackDamage = attackDamage;
+    this.attackDamage = definition.getAttackDamage();
+    this.speed = definition.getSpeed();
 
-    // Default monster collision area
-    solidArea = new Rectangle(
-        8, 8,
+    // Set up collision hitbox
+    this.solidArea = new Rectangle(
+        8,
+        8,
         GamePanel.tileSize - 16,
         GamePanel.tileSize - 16);
 
-    solidAreaDefaultX = solidArea.x;
-    solidAreaDefaultY = solidArea.y;
+    this.direction = "down";
+  }
 
-    direction = "down";
+  /**
+   * Calculates the distance between this monster
+   * and the player, measured in pixels.
+   *
+   * @return Distance to the player
+   */
+  protected double distanceToPlayer() {
+
+    double monsterCenterX = WorldX + GamePanel.tileSize / 2.0;
+    double monsterCenterY = WorldY + GamePanel.tileSize / 2.0;
+
+    double playerCenterX = gp.player.WorldX + GamePanel.tileSize / 2.0;
+    double playerCenterY = gp.player.WorldY + GamePanel.tileSize / 2.0;
+
+    return Math.hypot(
+        playerCenterX - monsterCenterX,
+        playerCenterY - monsterCenterY);
+  }
+
+  /**
+   * Checks whether the player is within this monster's
+   * configured detection range.
+   *
+   * @return true if the player is close enough to detect
+   */
+  protected boolean detectPlayer() {
+
+    return distanceToPlayer() <= definition.getDetectionRange() * GamePanel.tileSize;
+  }
+
+  public MonsterDefinition getDefinition() {
+    return definition;
+  }
+
+  /**
+   * Checks whether the monster's next movement
+   * would collide with the player.
+   *
+   * @param moveX Intended horizontal movement
+   * @param moveY Intended vertical movement
+   * @return true if the movement would hit the player
+   */
+  protected boolean checkPlayerCollision(double moveX, double moveY) {
+
+    Rectangle playerHitbox = new Rectangle(
+        (int) gp.player.WorldX + gp.player.solidArea.x,
+        (int) gp.player.WorldY + gp.player.solidArea.y,
+        gp.player.solidArea.width,
+        gp.player.solidArea.height);
+
+    // Predict the monster's next position
+    Rectangle nextHitbox = new Rectangle(
+        (int) Math.floor(WorldX + moveX + solidArea.x),
+        (int) Math.floor(WorldY + moveY + solidArea.y),
+        solidArea.width,
+        solidArea.height);
+
+    return nextHitbox.intersects(playerHitbox);
   }
 
   /**
@@ -84,21 +151,17 @@ public abstract class Monster extends Entity {
     }
   }
 
-  //Draws a health bar above the monster.
-protected void drawHealthBar(Graphics2D g2) {
+  // Draws a health bar above the monster.
+  protected void drawHealthBar(Graphics2D g2) {
 
     if (!isAlive()) {
-        return;
+      return;
     }
 
     // Convert world position to screen position
-    int screenX = (int) (
-        WorldX - gp.player.WorldX + gp.player.screenX
-    );
+    int screenX = (int) (WorldX - gp.player.WorldX + gp.player.screenX);
 
-    int screenY = (int) (
-        WorldY - gp.player.WorldY + gp.player.screenY
-    );
+    int screenY = (int) (WorldY - gp.player.WorldY + gp.player.screenY);
 
     // Health bar dimensions
     int barWidth = GamePanel.tileSize;
@@ -124,12 +187,44 @@ protected void drawHealthBar(Graphics2D g2) {
     // Border
     g2.setColor(Color.BLACK);
     g2.drawRect(barX, barY, barWidth, barHeight);
-}
+  }
 
   // Returns true while the monster is flashing from damage.
   protected boolean isDamageFlashing() {
     return lastDamageTime != 0 &&
         System.currentTimeMillis() - lastDamageTime < DAMAGE_FLASH_DURATION;
+  }
+
+  /**
+   * Attempts to move the monster while checking collisions.
+   *
+   * Currently supports four-direction movement.
+   */
+
+  protected boolean tryMove(double moveX, double moveY) {
+
+    if (!isAlive() || (moveX == 0 && moveY == 0)) {
+      return false;
+    }
+
+    // Tile collision using the actual movement vector
+    boolean tileBlocked = gp.cChecker.checkTileCollision(this, moveX, moveY);
+
+    // Existing object collision still uses direction and speed
+    boolean objectBlocked =
+    gp.cChecker.checkObjectCollision(this, moveX, moveY);
+
+    // Player and other monster collision
+    boolean entityBlocked = gp.cChecker.checkEntityCollision(this, moveX, moveY);
+
+    if (tileBlocked || objectBlocked || entityBlocked) {
+      return false;
+    }
+
+    WorldX += moveX;
+    WorldY += moveY;
+
+    return true;
   }
 
   /**
@@ -154,6 +249,14 @@ protected void drawHealthBar(Graphics2D g2) {
 
   public int getAttackDamage() {
     return attackDamage;
+  }
+
+  public MonsterNavigator getNavigator() {
+    return navigator;
+  }
+
+  public GamePanel getGamePanel() {
+    return gp;
   }
 
   /**

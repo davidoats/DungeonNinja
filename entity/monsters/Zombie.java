@@ -6,32 +6,47 @@ import java.awt.Graphics2D;
 
 import main.GamePanel;
 import entity.Monster;
+import entity.definitions.MonsterDefinitions;
 
 /**
  * A basic zombie enemy.
  */
 public class Zombie extends Monster {
 
+  // Whether the zombie has detected the player
+  private boolean playerDetected = false;
+
   /**
    * Creates a zombie at a specified world position.
    */
   public Zombie(GamePanel gp, double worldX, double worldY) {
-    super(gp, worldX, worldY, 50, 10);
-
-    // Zombie movement speed
-    speed = 2;
+    super(gp, MonsterDefinitions.ZOMBIE, worldX, worldY);
   }
 
   /**
    * Updates the zombie's behavior.
    */
+
   @Override
   public void update() {
+
     if (!isAlive()) {
       return;
     }
 
-    // We'll add zombie AI here later.
+    boolean detected = detectPlayer();
+
+    // Check if detection state changed
+    if (detected != playerDetected) {
+
+      playerDetected = detected;
+
+    }
+
+    // Chase the player when detected
+    if (playerDetected) {
+      chasePlayer();
+    }
   }
 
   /**
@@ -86,9 +101,46 @@ public class Zombie extends Monster {
         screenX + size / 2 + 3,
         screenY + size / 3,
         4, 4);
-    
+
     // Draw the monster's health bar
     drawHealthBar(g2);
+  }
+
+  // Moves the zombie toward the player.
+
+  private void chasePlayer() {
+
+    // Stop when within configured attack range
+    if (distanceToPlayer() <= definition.getAttackRange() * GamePanel.tileSize) {
+      return;
+    }
+
+    // Ask the navigator where to move
+    double[] movement = navigator.getMovement(
+        this,
+        gp.player.WorldX,
+        gp.player.WorldY);
+
+    double moveX = movement[0];
+    double moveY = movement[1];
+
+    // Face the direction we're moving
+    if (moveX > 0) {
+      direction = "right";
+    } else if (moveX < 0) {
+      direction = "left";
+    } else if (moveY > 0) {
+      direction = "down";
+    } else if (moveY < 0) {
+      direction = "up";
+    }
+
+    // Monster handles collision and movement
+    boolean moved = tryMove(moveX, moveY);
+
+    if (moveX != 0 || moveY != 0) {
+      navigator.reportMovementResult(moved);
+    }
   }
 
 }

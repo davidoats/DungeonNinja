@@ -16,8 +16,6 @@ import javax.imageio.ImageIO;
 
 import items.*;
 import combat.*;
-import entity.monsters.*;
-import entity.*;
 
 import main.GamePanel;
 
@@ -123,21 +121,36 @@ public class Player extends Entity {
       SuperObject object = gp.cChecker.checkObject(this, true);
       interactObject(object);
 
-      if (collisionOn == false) {
-        switch (direction) {
-          case "up":
-            WorldY = WorldY - speed;
-            break;
-          case "down":
-            WorldY = WorldY + speed;
-            break;
-          case "left":
-            WorldX = WorldX - speed;
-            break;
-          case "right":
-            WorldX = WorldX + speed;
-            break;
-        }
+      double moveX = 0;
+      double moveY = 0;
+
+      // Calculate movement based on direction
+      switch (direction) {
+        case "up":
+          moveY = -speed;
+          break;
+
+        case "down":
+          moveY = speed;
+          break;
+
+        case "left":
+          moveX = -speed;
+          break;
+
+        case "right":
+          moveX = speed;
+          break;
+      }
+
+      // Check collision with living monsters
+      if (gp.cChecker.checkEntityCollision(this, moveX, moveY)) {
+        collisionOn = true;
+      }
+
+      if (!collisionOn) {
+        WorldX += moveX;
+        WorldY += moveY;
       }
 
     }
@@ -195,52 +208,49 @@ public class Player extends Entity {
   /**
    * Checks whether the current weapon hits the zombie.
    */
-  
-/**
- * Checks whether the current attack hits any monsters.
- * Each monster can only be hit once per attack.
- */
-private void checkMonsterHits() {
+
+  /**
+   * Checks whether the current attack hits any monsters.
+   * Each monster can only be hit once per attack.
+   */
+  private void checkMonsterHits() {
 
     if (currentWeaponPose == null ||
         !currentWeaponPose.activeStrike) {
-        return;
+      return;
     }
 
     for (Monster monster : gp.monsters) {
 
-        // Skip dead monsters or monsters already hit
-        if (!monster.isAlive() ||
-            monstersHitThisAttack.contains(monster)) {
-            continue;
-        }
+      // Skip dead monsters or monsters already hit
+      if (!monster.isAlive() ||
+          monstersHitThisAttack.contains(monster)) {
+        continue;
+      }
 
-        // Get the monster's world-space hitbox
-        Rectangle hitbox = new Rectangle(
-            (int) monster.WorldX + monster.solidArea.x,
-            (int) monster.WorldY + monster.solidArea.y,
-            monster.solidArea.width,
-            monster.solidArea.height
-        );
+      // Get the monster's world-space hitbox
+      Rectangle hitbox = new Rectangle(
+          (int) monster.WorldX + monster.solidArea.x,
+          (int) monster.WorldY + monster.solidArea.y,
+          monster.solidArea.width,
+          monster.solidArea.height);
 
-        // Test the actual blade against the monster
-        boolean hit = WeaponCollision.bladeIntersects(
-            currentWeaponPose.bladeBaseX,
-            currentWeaponPose.bladeBaseY,
-            currentWeaponPose.tipX,
-            currentWeaponPose.tipY,
-            hitbox
-        );
+      // Test the actual blade against the monster
+      boolean hit = WeaponCollision.bladeIntersects(
+          currentWeaponPose.bladeBaseX,
+          currentWeaponPose.bladeBaseY,
+          currentWeaponPose.tipX,
+          currentWeaponPose.tipY,
+          hitbox);
 
-        if (hit) {
-            monster.takeDamage(10);
+      if (hit) {
+        monster.takeDamage(10);
 
-            // Prevent another hit until the next attack
-            monstersHitThisAttack.add(monster);
-        }
+        // Prevent another hit until the next attack
+        monstersHitThisAttack.add(monster);
+      }
     }
-}
-
+  }
 
   public void interactObject(SuperObject object) {
     if (object == null) {
