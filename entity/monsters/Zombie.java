@@ -13,9 +13,6 @@ import entity.definitions.MonsterDefinitions;
  */
 public class Zombie extends Monster {
 
-  // Whether the zombie has detected the player
-  private boolean playerDetected = false;
-
   /**
    * Creates a zombie at a specified world position.
    */
@@ -27,25 +24,35 @@ public class Zombie extends Monster {
    * Updates the zombie's behavior.
    */
 
+  /**
+   * Updates the zombie's behavior based on its AI state.
+   */
   @Override
   public void update() {
-
     if (!isAlive()) {
       return;
     }
 
-    boolean detected = detectPlayer();
+    // Determine whether to idle, chase, or attack.
+    updateBehaviorState();
 
-    // Check if detection state changed
-    if (detected != playerDetected) {
+    switch (state) {
+      case IDLE:
+        // No player detected.
+        break;
 
-      playerDetected = detected;
+      case CHASING:
+        chasePlayer();
+        break;
 
-    }
+      case ATTACKING:
+        attackPlayer();
+        break;
 
-    // Chase the player when detected
-    if (playerDetected) {
-      chasePlayer();
+      case RECOVERING:
+        // Recovery is currently handled by MonsterNavigator.
+        chasePlayer();
+        break;
     }
   }
 

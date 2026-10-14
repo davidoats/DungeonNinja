@@ -7,6 +7,7 @@ import java.awt.Rectangle;
 import main.GamePanel;
 import entity.definitions.MonsterDefinition;
 import entity.ai.MonsterNavigator;
+import entity.ai.MonsterState;
 
 /**
  * Base class for monsters in DungeonNinja.
@@ -19,23 +20,19 @@ public abstract class Monster extends Entity {
   protected final GamePanel gp;
   protected final MonsterDefinition definition;
   protected final MonsterNavigator navigator = new MonsterNavigator();
+  protected MonsterState state = MonsterState.IDLE;
 
   protected int maxHealth;
   protected int health;
   protected int attackDamage;
 
+  protected long lastAttackTime = 0;
+  protected long attackCooldown = 1000;
+
   // Damage flash
   protected long lastDamageTime = 0;
   protected static final long DAMAGE_FLASH_DURATION = 150;
 
-  /**
-   * Creates a monster using a reusable definition.
-   *
-   * @param gp         Game panel
-   * @param definition Monster type and attributes
-   * @param worldX     Starting world X coordinate
-   * @param worldY     Starting world Y coordinate
-   */
   public Monster(
       GamePanel gp,
       MonsterDefinition definition,
@@ -64,12 +61,6 @@ public abstract class Monster extends Entity {
     this.direction = "down";
   }
 
-  /**
-   * Calculates the distance between this monster
-   * and the player, measured in pixels.
-   *
-   * @return Distance to the player
-   */
   protected double distanceToPlayer() {
 
     double monsterCenterX = WorldX + GamePanel.tileSize / 2.0;
@@ -83,12 +74,6 @@ public abstract class Monster extends Entity {
         playerCenterY - monsterCenterY);
   }
 
-  /**
-   * Checks whether the player is within this monster's
-   * configured detection range.
-   *
-   * @return true if the player is close enough to detect
-   */
   protected boolean detectPlayer() {
 
     return distanceToPlayer() <= definition.getDetectionRange() * GamePanel.tileSize;
@@ -98,14 +83,6 @@ public abstract class Monster extends Entity {
     return definition;
   }
 
-  /**
-   * Checks whether the monster's next movement
-   * would collide with the player.
-   *
-   * @param moveX Intended horizontal movement
-   * @param moveY Intended vertical movement
-   * @return true if the movement would hit the player
-   */
   protected boolean checkPlayerCollision(double moveX, double moveY) {
 
     Rectangle playerHitbox = new Rectangle(
@@ -124,9 +101,6 @@ public abstract class Monster extends Entity {
     return nextHitbox.intersects(playerHitbox);
   }
 
-  /**
-   * Reduces the monster's health.
-   */
   public void takeDamage(int damage) {
 
     if (damage <= 0 || health <= 0) {
@@ -151,7 +125,6 @@ public abstract class Monster extends Entity {
     }
   }
 
-  // Draws a health bar above the monster.
   protected void drawHealthBar(Graphics2D g2) {
 
     if (!isAlive()) {
@@ -189,17 +162,10 @@ public abstract class Monster extends Entity {
     g2.drawRect(barX, barY, barWidth, barHeight);
   }
 
-  // Returns true while the monster is flashing from damage.
   protected boolean isDamageFlashing() {
     return lastDamageTime != 0 &&
         System.currentTimeMillis() - lastDamageTime < DAMAGE_FLASH_DURATION;
   }
-
-  /**
-   * Attempts to move the monster while checking collisions.
-   *
-   * Currently supports four-direction movement.
-   */
 
   protected boolean tryMove(double moveX, double moveY) {
 
@@ -211,8 +177,7 @@ public abstract class Monster extends Entity {
     boolean tileBlocked = gp.cChecker.checkTileCollision(this, moveX, moveY);
 
     // Existing object collision still uses direction and speed
-    boolean objectBlocked =
-    gp.cChecker.checkObjectCollision(this, moveX, moveY);
+    boolean objectBlocked = gp.cChecker.checkObjectCollision(this, moveX, moveY);
 
     // Player and other monster collision
     boolean entityBlocked = gp.cChecker.checkEntityCollision(this, moveX, moveY);
@@ -227,10 +192,6 @@ public abstract class Monster extends Entity {
     return true;
   }
 
-  /**
-   * Called when the monster dies.
-   * Specific enemy types can override this.
-   */
   protected void onDeath() {
     System.out.println(getClass().getSimpleName() + " defeated!");
   }
@@ -259,12 +220,99 @@ public abstract class Monster extends Entity {
     return gp;
   }
 
-  /**
-   * Updates the monster's behavior.
-   */
   public abstract void update();
 
-  // Draws the monster in the game world.
   public abstract void draw(Graphics2D g2);
+
+  public MonsterState getState() {
+    return state;
+  }
+
+  protected void setState(MonsterState newState) {
+    if (newState == null || state == newState) {
+      return;
+    }
+
+    state = newState;
+  }
+
+  protected void updateBehaviorState() {
+
+    if (!isAlive()) {
+      return;
+    }
+
+    // Do not interrupt navigation recovery.
+    if (state == MonsterState.RECOVERING) {
+      return;
+    }
+
+    // Player is outside detection range.
+    if (!detectPlayer()) {
+      setState(MonsterState.IDLE);
+      return;
+    }
+
+    // Check whether the player is within attack range.
+    double attackDistance = definition.getAttackRange() * GamePanel.tileSize;
+
+    if (distanceToPlayer() <= attackDistance) {
+      setState(MonsterState.ATTACKING);
+    } else {
+      setState(MonsterState.CHASING);
+    }
+  }
+
+  protected boolean shouldChasePlayer() {
+    return state == MonsterState.CHASING;
+  }
+
+  protected boolean canAttack() {
+    return isAlive()
+        && System.currentTimeMillis() - lastAttackTime >= attackCooldown;
+  }
+
+  protected void startAttackCooldown() {
+    lastAttackTime = System.currentTimeMillis();
+  }
+
+  public void setAttackCooldown(long cooldown) {
+    if (cooldown < 0) {
+      throw new IllegalArgumentException(
+          "Attack cooldown cannot be negative.");
+    }
+
+    attackCooldown = cooldown;
+  }
+
+  public long getAttackCooldown() {
+    return attackCooldown;
+  }
+
+protected boolean attackPlayer() {
+
+    if (!isAlive() || !gp.player.isAlive()) {
+        return false;
+    }
+
+    // Verify the player is still within attack range.
+    double attackRange =
+            definition.getAttackRange() * GamePanel.tileSize;
+
+    if (distanceToPlayer() > attackRange) {
+        return false;
+    }
+
+    // Prevent attacks from occurring every frame.
+    if (!canAttack()) {
+        return false;
+    }
+
+    gp.player.takeDamage(attackDamage);
+
+    startAttackCooldown();
+
+    return true;
+}
 
 }

@@ -48,12 +48,10 @@ public class GamePanel extends JPanel implements Runnable {
   Sound music = new Sound();
   Sound se = new Sound();
 
-
-
-  //Replacing
+  // Replacing
   public TrainingDummy trainingDummy;
 
-// With
+  // With
   public final List<Monster> monsters = new ArrayList<>();
 
   public final DamageNumberManager damageNumbers = new DamageNumberManager();
@@ -73,17 +71,19 @@ public class GamePanel extends JPanel implements Runnable {
     player.setValues(level);
     tileM.loadMap(level + ".txt");
     trainingDummy = new TrainingDummy(this, GamePanel.tileSize * 9, GamePanel.tileSize * 11);
-    
+
     // Clear monsters from the previous level
     monsters.clear();
 
     // Spawn our first zombie
-    monsters.add(new Zombie( this, GamePanel.tileSize * 5, GamePanel.tileSize * 11));
+    monsters.add(new Zombie(this, GamePanel.tileSize * 5, GamePanel.tileSize * 11));
 
     // Second zombie for testing
-    monsters.add(new Zombie( this, GamePanel.tileSize * 7, GamePanel.tileSize * 7));
+    monsters.add(new Zombie(this, GamePanel.tileSize * 7, GamePanel.tileSize * 7));
 
-    // playMusic(0);
+    if (level == 1) {
+      playMusic(0);
+    }
   }
 
   public void startGameThread() {
@@ -169,25 +169,23 @@ public class GamePanel extends JPanel implements Runnable {
       trainingDummy.draw(g2);
     }
 
+    double cameraX = player.WorldX - player.screenX;
+    double cameraY = player.WorldY - player.screenY;
 
-      double cameraX = player.WorldX - player.screenX;
-      double cameraY = player.WorldY - player.screenY;
+    // Draw floating damage numbers above the game world
+    damageNumbers.draw(g2, cameraX, cameraY);
 
-      // Draw floating damage numbers above the game world
-      damageNumbers.draw(g2, cameraX, cameraY);
-
-    
     // Draw enemies
     // Draw all living monsters
     for (Monster monster : monsters) {
-        if (monster.isAlive()) {
-            monster.draw(g2);
-        }
+      if (monster.isAlive()) {
+        monster.draw(g2);
+      }
     }
 
-// Draw player and weapon
-player.draw(g2);
-player.drawWeaponPose(g2);
+    // Draw player and weapon
+    player.draw(g2);
+    player.drawWeaponPose(g2);
 
     // Draw player & Weapon
     player.draw(g2);

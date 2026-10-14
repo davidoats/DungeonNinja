@@ -251,49 +251,43 @@ public class CollisionChecker {
     return false;
   }
 
-
-/**
- * Checks whether an entity's next position would
- * overlap a solid object.
- *
- * Does not interact with or collect objects.
- */
-public boolean checkObjectCollision(
-        Entity entity, double moveX, double moveY) {
+  /**
+   * Checks whether an entity's next position would
+   * overlap a solid object.
+   *
+   * Does not interact with or collect objects.
+   */
+  public boolean checkObjectCollision(
+      Entity entity, double moveX, double moveY) {
 
     Rectangle2D.Double nextHitbox = new Rectangle2D.Double(
         entity.WorldX + moveX + entity.solidArea.x,
         entity.WorldY + moveY + entity.solidArea.y,
         entity.solidArea.width,
-        entity.solidArea.height
-    );
+        entity.solidArea.height);
 
     synchronized (gp.objLock) {
 
-        for (SuperObject object : gp.obj) {
+      for (SuperObject object : gp.obj) {
 
-            if (object == null || !object.collision) {
-                continue;
-            }
-
-            Rectangle2D.Double objectHitbox =
-                new Rectangle2D.Double(
-                    object.worldX + object.solidArea.x,
-                    object.worldY + object.solidArea.y,
-                    object.solidArea.width,
-                    object.solidArea.height
-                );
-
-            if (nextHitbox.intersects(objectHitbox)) {
-                return true;
-            }
+        if (object == null || !object.collision) {
+          continue;
         }
+
+        Rectangle2D.Double objectHitbox = new Rectangle2D.Double(
+            object.worldX + object.solidArea.x,
+            object.worldY + object.solidArea.y,
+            object.solidArea.width,
+            object.solidArea.height);
+
+        if (nextHitbox.intersects(objectHitbox)) {
+          return true;
+        }
+      }
     }
 
     return false;
-}
-
-
+  }
 
   /**
    * Checks if an entity's intended movement would

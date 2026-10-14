@@ -7,7 +7,7 @@ import main.GamePanel;
 
 import java.awt.Point;
 import java.util.Collections;
-import java.util.List; 
+import java.util.List;
 
 /**
  * Selects a monster's desired movement toward a target.
@@ -269,7 +269,10 @@ public class MonsterNavigator {
         }
     }
 
-    /** Finds a nearby, A*-reachable escape tile, favoring progress toward the player. */
+    /**
+     * Finds a nearby, A*-reachable escape tile, favoring progress toward the
+     * player.
+     */
     private Point findRecoveryTarget(Monster monster, double targetX, double targetY) {
         int tileSize = GamePanel.tileSize;
         int startCol = (int) Math.floor(monster.WorldX / tileSize);
@@ -281,10 +284,8 @@ public class MonsterNavigator {
         Point bestTarget = null;
         double bestScore = Double.POSITIVE_INFINITY;
 
-        for (int col = startCol - RECOVERY_SEARCH_RADIUS;
-                col <= startCol + RECOVERY_SEARCH_RADIUS; col++) {
-            for (int row = startRow - RECOVERY_SEARCH_RADIUS;
-                    row <= startRow + RECOVERY_SEARCH_RADIUS; row++) {
+        for (int col = startCol - RECOVERY_SEARCH_RADIUS; col <= startCol + RECOVERY_SEARCH_RADIUS; col++) {
+            for (int row = startRow - RECOVERY_SEARCH_RADIUS; row <= startRow + RECOVERY_SEARCH_RADIUS; row++) {
 
                 if (col < 0 || row < 0 ||
                         col >= monster.getGamePanel().maxWorldCol ||

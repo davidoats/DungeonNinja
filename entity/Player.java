@@ -11,6 +11,8 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.awt.Color;
+import java.awt.image.RescaleOp;
 
 import javax.imageio.ImageIO;
 
@@ -30,6 +32,10 @@ public class Player extends Entity {
   public final int screenY;
   public String facingDirection = "down";
 
+  // Player health
+  private int maxHealth = 100;
+  private int health = maxHealth;
+
   public int hasKey = 0;
   public double speedMultiplier = 1;
 
@@ -43,6 +49,10 @@ public class Player extends Entity {
   private final SwordTrail swordTrail = new SwordTrail();
   private int comboIndex = 0;
   private long lastComboTime = 0;
+
+  // Damage flash
+  private long lastDamageTime = 0;
+  private static final long DAMAGE_FLASH_DURATION = 150;
 
   private final Set<Monster> monstersHitThisAttack = new HashSet<>();
   private boolean dummyHitThisAttack = false;
@@ -86,7 +96,7 @@ public class Player extends Entity {
     }
   }
 
-  public void getPlayerImage() {
+public void getPlayerImage() {
     try {
       up1 = ImageIO.read(getClass().getResourceAsStream("/res/player/boy_up_1.png"));
       up2 = ImageIO.read(getClass().getResourceAsStream("/res/player/boy_up_2.png"));
@@ -101,7 +111,7 @@ public class Player extends Entity {
     }
   }
 
-  public void update() {
+public void update() {
     if (keyH.upPressed == true) {
       direction = "up";
     } else if (keyH.downPressed == true) {
@@ -205,15 +215,7 @@ public class Player extends Entity {
 
   }
 
-  /**
-   * Checks whether the current weapon hits the zombie.
-   */
-
-  /**
-   * Checks whether the current attack hits any monsters.
-   * Each monster can only be hit once per attack.
-   */
-  private void checkMonsterHits() {
+private void checkMonsterHits() {
 
     if (currentWeaponPose == null ||
         !currentWeaponPose.activeStrike) {
@@ -252,7 +254,7 @@ public class Player extends Entity {
     }
   }
 
-  public void interactObject(SuperObject object) {
+public void interactObject(SuperObject object) {
     if (object == null) {
       return;
     }
@@ -301,7 +303,7 @@ public class Player extends Entity {
     }
   }
 
-  private WeaponPose calculateWeaponPose(long currentTime) {
+private WeaponPose calculateWeaponPose(long currentTime) {
 
     if (!attacking || equippedWeapon == null ||
         currentAttack == null) {
@@ -441,11 +443,7 @@ public class Player extends Entity {
         activeStrike);
   }
 
-  /**
-   * Records the sword tip's movement during slashes.
-   */
-
-  private void updateSwordTrail(long currentTime) {
+private void updateSwordTrail(long currentTime) {
     swordTrail.update(currentTime);
 
     if (currentWeaponPose == null ||
@@ -462,11 +460,7 @@ public class Player extends Entity {
         currentTime);
   }
 
-  /**
-   * Checks whether the current weapon attack
-   * hits the training dummy.
-   */
-  private void checkWeaponHit() {
+private void checkWeaponHit() {
 
     // Don't check collisions outside active attacks
     if (currentWeaponPose == null ||
@@ -506,7 +500,7 @@ public class Player extends Entity {
     }
   }
 
-  public void updateAttack() {
+public void updateAttack() {
     long currentTime = System.currentTimeMillis();
 
     // End the current attack once its animation is finished
@@ -552,7 +546,7 @@ public class Player extends Entity {
     comboIndex = (comboIndex + 1) % profile.getComboLength();
   }
 
-  public void faceMouse() {
+public void faceMouse() {
     double degrees = Math.toDegrees(attackAngle);
 
     if (degrees >= -45 && degrees < 45) {
@@ -566,7 +560,7 @@ public class Player extends Entity {
     }
   }
 
-  public void draw(Graphics2D g2) {
+public void draw(Graphics2D g2) {
 
     BufferedImage image = null;
 
@@ -605,10 +599,40 @@ public class Player extends Entity {
         }
         break;
     }
-    g2.drawImage(image, screenX, screenY, GamePanel.tileSize, GamePanel.tileSize, null);
+
+    if (image == null) {
+      return;
+    }
+
+    // Temporarily tint the player red after taking damage.
+    if (isDamageFlashing()) {
+      BufferedImage tintedImage = new BufferedImage(
+          image.getWidth(),
+          image.getHeight(),
+          BufferedImage.TYPE_INT_ARGB);
+
+      // Preserve the original image and transparency.
+      Graphics2D tintGraphics = tintedImage.createGraphics();
+      tintGraphics.drawImage(image, 0, 0, null);
+      tintGraphics.dispose();
+
+      // Increase red while reducing green and blue.
+      float[] scales = { 1.0f, 0.35f, 0.35f, 1.0f };
+      float[] offsets = { 80f, 0f, 0f, 0f };
+
+      RescaleOp redTint = new RescaleOp(scales, offsets, null);
+      redTint.filter(tintedImage, tintedImage);
+
+      g2.drawImage(tintedImage, screenX, screenY,
+          GamePanel.tileSize, GamePanel.tileSize, null);
+    } else {
+      g2.drawImage(image, screenX, screenY,
+          GamePanel.tileSize, GamePanel.tileSize, null);
+    }
+
   }
 
-  public void drawWeaponPose(Graphics2D g2) {
+public void drawWeaponPose(Graphics2D g2) {
 
     // Convert weapon world coordinates to screen coordinates
     double cameraX = WorldX - screenX;
@@ -640,4 +664,57 @@ public class Player extends Entity {
         48);
   }
 
+public void takeDamage(int damage) {
+    if (damage <= 0 || !isAlive()) {
+        return;
+    }
+
+    int actualDamage = Math.min(damage, health);
+
+    health -= actualDamage;
+
+    // Trigger damage flash.
+    lastDamageTime = System.currentTimeMillis();
+
+    // Display a floating damage number.
+    gp.damageNumbers.add(
+            actualDamage,
+            WorldX + GamePanel.tileSize / 2.0,
+            WorldY
+    );
+
+    if (!isAlive()) {
+        onDeath();
+    }
+}
+
+private void onDeath() {
+    System.out.println("Player defeated!");
+}
+
+public boolean isAlive() {
+    return health > 0;
+}
+
+public int getHealth() {
+    return health;
+}
+
+public int getMaxHealth() {
+    return maxHealth;
+}
+
+public void heal(int amount) {
+    if (amount <= 0 || !isAlive()) {
+        return;
+    }
+
+    health = Math.min(maxHealth, health + amount);
+}
+
+private boolean isDamageFlashing() {
+    return lastDamageTime != 0 &&
+            System.currentTimeMillis() - lastDamageTime
+                    < DAMAGE_FLASH_DURATION;
+}
 }
