@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dungeon Ninja</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <h1>Dungeon Ninja</h1>
+        <p>HTML / JavaScript recreation</p>
+      </div>
+      <div class="controls">WASD / Arrows: move · Mouse: aim · Left click: attack · Hold V: zoom out</div>
+    </header>
+    <div class="stage-wrap">
+      <canvas id="game" width="1024" height="768" tabindex="0"></canvas>
+      <div id="startOverlay" class="overlay">
+        <div class="card">
+          <h2>Dungeon Ninja</h2>
+          <p>Click to start. This enables the original music and gives the game keyboard focus.</p>
+          <button id="startButton">Play</button>
+        </div>
+      </div>
+    </div>
+    <footer>Level <span id="levelLabel">1</span> · Katana combo: 3 attacks</footer>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>

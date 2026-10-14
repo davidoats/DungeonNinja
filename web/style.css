@@ -1,0 +1,18 @@
+:root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: radial-gradient(circle at top, #18202a, #080a0d 70%); color: #f4f6f8; }
+.shell { width: min(1120px, 100%); padding: 18px; }
+header, footer { display: flex; align-items: end; justify-content: space-between; gap: 16px; }
+h1 { margin: 0; font-size: clamp(24px, 4vw, 42px); letter-spacing: .04em; }
+header p, footer, .controls { margin: 4px 0 0; color: #aeb9c6; }
+.controls { text-align: right; font-size: 14px; }
+.stage-wrap { position: relative; margin: 14px 0; border: 2px solid #2b3440; border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 18px 60px #0008; aspect-ratio: 4 / 3; }
+canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; cursor: crosshair; outline: none; }
+.overlay { position: absolute; inset: 0; display: grid; place-items: center; background: #07090db8; backdrop-filter: blur(4px); }
+.overlay.hidden { display: none; }
+.card { width: min(440px, 86%); padding: 28px; border: 1px solid #384657; border-radius: 14px; background: #111822e8; text-align: center; }
+.card h2 { margin-top: 0; font-size: 32px; }
+.card p { color: #c1c8d0; line-height: 1.5; }
+button { border: 0; border-radius: 9px; padding: 12px 26px; font: inherit; font-weight: 800; color: #101317; background: #f1c453; cursor: pointer; }
+button:hover { filter: brightness(1.08); }
+@media (max-width: 760px) { header { align-items: start; flex-direction: column; } .controls { text-align: left; } }

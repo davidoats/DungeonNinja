@@ -1,0 +1,11 @@
+{
+  "Player": {
+    "WorldX": 9,
+    "WorldY": 3
+  },
+
+  "Objects": [
+    {"type": "Key", "x": 3, "y": 5},
+    {"type": "NextLevelDoor", "x": 2, "y": 13}
+  ]
+}
