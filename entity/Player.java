@@ -33,8 +33,16 @@ public class Player extends Entity {
   public String facingDirection = "down";
 
   // Player health
-  private int maxHealth = 100;
+  private int maxHealth = 1000;
   private int health = maxHealth;
+
+  // HUD damage feedback
+private int lastDamageAmount = 0;
+private long lastDamageHudTime = 0;
+private long lastDamageFrame = -1;
+private static final long DAMAGE_GROUP_WINDOW = 500;
+
+private static final long DAMAGE_HUD_DURATION = 1000;
 
   public int hasKey = 0;
   public double speedMultiplier = 1;
@@ -673,15 +681,22 @@ public void takeDamage(int damage) {
 
     health -= actualDamage;
 
+    long now = System.currentTimeMillis();
+
+if (lastDamageHudTime > 0 &&
+        now - lastDamageHudTime <= DAMAGE_GROUP_WINDOW) {
+    // Combine hits received within 50 milliseconds.
+    lastDamageAmount += actualDamage;
+} else {
+    lastDamageAmount = actualDamage;
+}
+
+lastDamageHudTime = now;
+
     // Trigger damage flash.
     lastDamageTime = System.currentTimeMillis();
 
-    // Display a floating damage number.
-    gp.damageNumbers.add(
-            actualDamage,
-            WorldX + GamePanel.tileSize / 2.0,
-            WorldY
-    );
+    
 
     if (!isAlive()) {
         onDeath();
@@ -716,5 +731,17 @@ private boolean isDamageFlashing() {
     return lastDamageTime != 0 &&
             System.currentTimeMillis() - lastDamageTime
                     < DAMAGE_FLASH_DURATION;
+}
+
+public int getLastDamageAmount() {
+    return lastDamageAmount;
+}
+
+public long getLastDamageHudTime() {
+    return lastDamageHudTime;
+}
+
+public long getDamageHudDuration() {
+    return DAMAGE_HUD_DURATION;
 }
 }
