@@ -37,12 +37,12 @@ public class Player extends Entity {
   private int health = maxHealth;
 
   // HUD damage feedback
-private int lastDamageAmount = 0;
-private long lastDamageHudTime = 0;
-private long lastDamageFrame = -1;
-private static final long DAMAGE_GROUP_WINDOW = 500;
+  private int lastDamageAmount = 0;
+  private long lastDamageHudTime = 0;
+  private long lastDamageFrame = -1;
+  private static final long DAMAGE_GROUP_WINDOW = 500;
 
-private static final long DAMAGE_HUD_DURATION = 1000;
+  private static final long DAMAGE_HUD_DURATION = 1000;
 
   public int hasKey = 0;
   public double speedMultiplier = 1;
@@ -104,7 +104,7 @@ private static final long DAMAGE_HUD_DURATION = 1000;
     }
   }
 
-public void getPlayerImage() {
+  public void getPlayerImage() {
     try {
       up1 = ImageIO.read(getClass().getResourceAsStream("/res/player/boy_up_1.png"));
       up2 = ImageIO.read(getClass().getResourceAsStream("/res/player/boy_up_2.png"));
@@ -119,7 +119,7 @@ public void getPlayerImage() {
     }
   }
 
-public void update() {
+  public void update() {
     if (keyH.upPressed == true) {
       direction = "up";
     } else if (keyH.downPressed == true) {
@@ -223,9 +223,9 @@ public void update() {
 
   }
 
-private void checkMonsterHits() {
+  private void checkMonsterHits() {
 
-    if (currentWeaponPose == null ||
+    if (currentWeaponPose == null || equippedWeapon == null ||
         !currentWeaponPose.activeStrike) {
       return;
     }
@@ -254,15 +254,21 @@ private void checkMonsterHits() {
           hitbox);
 
       if (hit) {
-        monster.takeDamage(10);
+        monster.takeDamage(equippedWeapon.getDamage());
 
-        // Prevent another hit until the next attack
+        if (monster.isAlive()) {
+          monster.applyKnockback(
+              WorldX + solidArea.x + solidArea.width / 2.0,
+              WorldY + solidArea.y + solidArea.height / 2.0,
+              equippedWeapon.getKnockback());
+        }
+
         monstersHitThisAttack.add(monster);
       }
     }
   }
 
-public void interactObject(SuperObject object) {
+  public void interactObject(SuperObject object) {
     if (object == null) {
       return;
     }
@@ -311,7 +317,7 @@ public void interactObject(SuperObject object) {
     }
   }
 
-private WeaponPose calculateWeaponPose(long currentTime) {
+  private WeaponPose calculateWeaponPose(long currentTime) {
 
     if (!attacking || equippedWeapon == null ||
         currentAttack == null) {
@@ -451,7 +457,7 @@ private WeaponPose calculateWeaponPose(long currentTime) {
         activeStrike);
   }
 
-private void updateSwordTrail(long currentTime) {
+  private void updateSwordTrail(long currentTime) {
     swordTrail.update(currentTime);
 
     if (currentWeaponPose == null ||
@@ -468,11 +474,11 @@ private void updateSwordTrail(long currentTime) {
         currentTime);
   }
 
-private void checkWeaponHit() {
+  private void checkWeaponHit() {
 
     // Don't check collisions outside active attacks
     if (currentWeaponPose == null ||
-        !currentWeaponPose.activeStrike ||
+        !currentWeaponPose.activeStrike || equippedWeapon == null ||
         dummyHitThisAttack) {
       return;
     }
@@ -500,7 +506,7 @@ private void checkWeaponHit() {
         hitbox);
 
     if (hit) {
-      dummy.takeDamage(10);
+      dummy.takeDamage(equippedWeapon.getDamage());
 
       // Prevent this swing from damaging
       // the same dummy multiple times
@@ -508,7 +514,7 @@ private void checkWeaponHit() {
     }
   }
 
-public void updateAttack() {
+  public void updateAttack() {
     long currentTime = System.currentTimeMillis();
 
     // End the current attack once its animation is finished
@@ -554,7 +560,7 @@ public void updateAttack() {
     comboIndex = (comboIndex + 1) % profile.getComboLength();
   }
 
-public void faceMouse() {
+  public void faceMouse() {
     double degrees = Math.toDegrees(attackAngle);
 
     if (degrees >= -45 && degrees < 45) {
@@ -568,7 +574,7 @@ public void faceMouse() {
     }
   }
 
-public void draw(Graphics2D g2) {
+  public void draw(Graphics2D g2) {
 
     BufferedImage image = null;
 
@@ -640,7 +646,7 @@ public void draw(Graphics2D g2) {
 
   }
 
-public void drawWeaponPose(Graphics2D g2) {
+  public void drawWeaponPose(Graphics2D g2) {
 
     // Convert weapon world coordinates to screen coordinates
     double cameraX = WorldX - screenX;
@@ -672,9 +678,9 @@ public void drawWeaponPose(Graphics2D g2) {
         48);
   }
 
-public void takeDamage(int damage) {
+  public void takeDamage(int damage) {
     if (damage <= 0 || !isAlive()) {
-        return;
+      return;
     }
 
     int actualDamage = Math.min(damage, health);
@@ -683,65 +689,62 @@ public void takeDamage(int damage) {
 
     long now = System.currentTimeMillis();
 
-if (lastDamageHudTime > 0 &&
+    if (lastDamageHudTime > 0 &&
         now - lastDamageHudTime <= DAMAGE_GROUP_WINDOW) {
-    // Combine hits received within 50 milliseconds.
-    lastDamageAmount += actualDamage;
-} else {
-    lastDamageAmount = actualDamage;
-}
+      // Combine hits received within 50 milliseconds.
+      lastDamageAmount += actualDamage;
+    } else {
+      lastDamageAmount = actualDamage;
+    }
 
-lastDamageHudTime = now;
+    lastDamageHudTime = now;
 
     // Trigger damage flash.
     lastDamageTime = System.currentTimeMillis();
 
-    
-
     if (!isAlive()) {
-        onDeath();
+      onDeath();
     }
-}
+  }
 
-private void onDeath() {
+  private void onDeath() {
     System.out.println("Player defeated!");
-}
+  }
 
-public boolean isAlive() {
+  public boolean isAlive() {
     return health > 0;
-}
+  }
 
-public int getHealth() {
+  public int getHealth() {
     return health;
-}
+  }
 
-public int getMaxHealth() {
+  public int getMaxHealth() {
     return maxHealth;
-}
+  }
 
-public void heal(int amount) {
+  public void heal(int amount) {
     if (amount <= 0 || !isAlive()) {
-        return;
+      return;
     }
 
     health = Math.min(maxHealth, health + amount);
-}
+  }
 
-private boolean isDamageFlashing() {
+  private boolean isDamageFlashing() {
     return lastDamageTime != 0 &&
-            System.currentTimeMillis() - lastDamageTime
-                    < DAMAGE_FLASH_DURATION;
-}
+        System.currentTimeMillis() - lastDamageTime < DAMAGE_FLASH_DURATION;
+  }
 
-public int getLastDamageAmount() {
+  public int getLastDamageAmount() {
     return lastDamageAmount;
-}
+  }
 
-public long getLastDamageHudTime() {
+  public long getLastDamageHudTime() {
     return lastDamageHudTime;
-}
+  }
 
-public long getDamageHudDuration() {
+  public long getDamageHudDuration() {
     return DAMAGE_HUD_DURATION;
-}
+  }
 }

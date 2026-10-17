@@ -18,6 +18,7 @@ public final class MonsterDefinitions {
             "Zombie",
             50, // Maximum health
             10, // Attack damage
+            0.20, // 20% knockback resistance
             2.0, // Movement speed
             5.0, // Detection range (tiles)
             0.8, // Attack range (tiles)
@@ -29,6 +30,7 @@ public final class MonsterDefinitions {
             "Skeleton",
             30,
             8,
+            0.10,
             2.5,
             7.0,
             5.0,
@@ -39,6 +41,7 @@ public final class MonsterDefinitions {
             "Spider",
             25,
             6,
+            0.05,
             4.0,
             6.0,
             0.8,

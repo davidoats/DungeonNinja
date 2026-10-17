@@ -27,7 +27,8 @@ public final class WeaponLoader {
                     AnimationProfiles.KATANA,
                     sprite,
                     0.5, 0.0, // Blade tip
-                    0.5, 0.65 // Blade base
+                    0.5, 0.65, // Blade base
+                    10, 5.0 // Damage  and KB
             );
 
         } catch (IOException e) {

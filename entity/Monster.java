@@ -8,6 +8,11 @@ import main.GamePanel;
 import entity.definitions.MonsterDefinition;
 import entity.ai.MonsterNavigator;
 import entity.ai.MonsterState;
+import java.awt.image.BufferedImage;
+import java.awt.image.RescaleOp;
+
+import javax.imageio.ImageIO;
+import java.io.IOException;
 
 /**
  * Base class for monsters in DungeonNinja.
@@ -21,6 +26,7 @@ public abstract class Monster extends Entity {
   protected final MonsterDefinition definition;
   protected final MonsterNavigator navigator = new MonsterNavigator();
   protected MonsterState state = MonsterState.IDLE;
+  protected BufferedImage monsterSprite;
 
   protected int maxHealth;
   protected int health;
@@ -28,10 +34,18 @@ public abstract class Monster extends Entity {
 
   protected long lastAttackTime = 0;
   protected long attackCooldown = 1000;
+  protected boolean provoked = false;
+
+  // Knockback
+  protected double knockbackX = 0;
+  protected double knockbackY = 0;
+  protected int knockbackFrames = 0;
+  private static final int KNOCKBACK_DURATION = 20;
+  private static final double KNOCKBACK_SPEED = 4.0;
 
   // Damage flash
   protected long lastDamageTime = 0;
-  protected static final long DAMAGE_FLASH_DURATION = 150;
+  protected static final long DAMAGE_FLASH_DURATION = 200;
 
   public Monster(
       GamePanel gp,
@@ -192,6 +206,21 @@ public abstract class Monster extends Entity {
     return true;
   }
 
+  public void getMonsterImage(String monsterImage) {
+    try {
+      up1 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_up_1.png"));
+      up2 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_up_2.png"));
+      down1 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_down_1.png"));
+      down2 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_down_2.png"));
+      left1 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_left_1.png"));
+      left2 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_left_2.png"));
+      right1 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_right_1.png"));
+      right2 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_right_2.png"));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
   protected void onDeath() {
     System.out.println(getClass().getSimpleName() + " defeated!");
   }
@@ -236,24 +265,30 @@ public abstract class Monster extends Entity {
     state = newState;
   }
 
+  /**
+   * Updates the monster's behavior based on player detection,
+   * attack range, and provocation.
+   */
   protected void updateBehaviorState() {
 
-    if (!isAlive()) {
-      return;
-    }
-
-    // Do not interrupt navigation recovery.
-    if (state == MonsterState.RECOVERING) {
-      return;
-    }
-
-    // Player is outside detection range.
-    if (!detectPlayer()) {
+    if (!isAlive() || !gp.player.isAlive()) {
       setState(MonsterState.IDLE);
       return;
     }
 
-    // Check whether the player is within attack range.
+    // Once the monster detects the player,
+    // it remains provoked.
+    if (detectPlayer()) {
+      provoked = true;
+    }
+
+    // Stay idle until the player is first detected.
+    if (!provoked) {
+      setState(MonsterState.IDLE);
+      return;
+    }
+
+    // Attack when within range, otherwise chase.
     double attackDistance = definition.getAttackRange() * GamePanel.tileSize;
 
     if (distanceToPlayer() <= attackDistance) {
@@ -289,23 +324,22 @@ public abstract class Monster extends Entity {
     return attackCooldown;
   }
 
-protected boolean attackPlayer() {
+  protected boolean attackPlayer() {
 
     if (!isAlive() || !gp.player.isAlive()) {
-        return false;
+      return false;
     }
 
     // Verify the player is still within attack range.
-    double attackRange =
-            definition.getAttackRange() * GamePanel.tileSize;
+    double attackRange = definition.getAttackRange() * GamePanel.tileSize;
 
     if (distanceToPlayer() > attackRange) {
-        return false;
+      return false;
     }
 
     // Prevent attacks from occurring every frame.
     if (!canAttack()) {
-        return false;
+      return false;
     }
 
     gp.player.takeDamage(attackDamage);
@@ -313,6 +347,136 @@ protected boolean attackPlayer() {
     startAttackCooldown();
 
     return true;
-}
+  }
+
+  public void applyKnockback(
+      double sourceX,
+      double sourceY,
+      double strength) {
+
+    if (!isAlive() || strength <= 0) {
+      return;
+    }
+
+    double resistance = definition.getKnockbackResistance();
+
+    double finalStrength = strength * (1.0 - resistance);
+
+    if (finalStrength <= 0) {
+      return;
+    }
+
+    // Calculate the monster's center.
+    double centerX = WorldX + solidArea.x + solidArea.width / 2.0;
+    double centerY = WorldY + solidArea.y + solidArea.height / 2.0;
+
+    // Direction away from the attacker.
+    double dx = centerX - sourceX;
+    double dy = centerY - sourceY;
+
+    double distance = Math.hypot(dx, dy);
+
+    if (distance < 0.001) {
+      return;
+    }
+
+    // Distribute knockback over several updates.
+    knockbackX = dx / distance * finalStrength;
+    knockbackY = dy / distance * finalStrength;
+
+    knockbackFrames = KNOCKBACK_DURATION;
+  }
+
+  /**
+   * Updates knockback movement while respecting collision.
+   *
+   * @return true if knockback consumed this update
+   */
+  protected boolean updateKnockback() {
+
+    if (knockbackFrames <= 0) {
+      return false;
+    }
+
+    // Try horizontal and vertical movement separately,
+    // allowing the monster to slide along obstacles.
+    if (Math.abs(knockbackX) > 0.001) {
+      tryMove(knockbackX, 0);
+    }
+
+    if (Math.abs(knockbackY) > 0.001) {
+      tryMove(0, knockbackY);
+    }
+
+    knockbackFrames--;
+
+    return true;
+  }
+
+  protected void loadSprite(String path) {
+    try (var stream = getClass().getResourceAsStream(path)) {
+
+      if (stream == null) {
+        throw new IOException("Sprite not found: " + path);
+      }
+
+      monsterSprite = ImageIO.read(stream);
+
+      if (monsterSprite == null) {
+        throw new IOException("Invalid sprite: " + path);
+      }
+
+    } catch (IOException e) {
+      throw new IllegalStateException(
+          "Failed to load monster sprite: " + path, e);
+    }
+  }
+
+  protected void drawMonsterSprite(Graphics2D g2) {
+
+    if (!isAlive() || monsterSprite == null) {
+      return;
+    }
+
+    if (updateKnockback()) {
+      return;
+    }
+
+    int screenX = (int) (WorldX - gp.player.WorldX + gp.player.screenX);
+
+    int screenY = (int) (WorldY - gp.player.WorldY + gp.player.screenY);
+
+    if (isDamageFlashing()) {
+      BufferedImage tintedImage = new BufferedImage(
+          monsterSprite.getWidth(),
+          monsterSprite.getHeight(),
+          BufferedImage.TYPE_INT_ARGB);
+
+      // Preserve the original image and transparency.
+      Graphics2D tintGraphics = tintedImage.createGraphics();
+      tintGraphics.drawImage(monsterSprite, 0, 0, null);
+      tintGraphics.dispose();
+
+      // Increase red while reducing green and blue.
+      float[] scales = { 1.0f, 0.35f, 0.35f, 1.0f };
+      float[] offsets = { 80f, 0f, 0f, 0f };
+
+      RescaleOp redTint = new RescaleOp(scales, offsets, null);
+      redTint.filter(tintedImage, tintedImage);
+
+      g2.drawImage(tintedImage, screenX, screenY,
+          GamePanel.tileSize, GamePanel.tileSize, null);
+    } else {
+      g2.drawImage(
+          monsterSprite,
+          screenX,
+          screenY,
+          GamePanel.tileSize,
+          GamePanel.tileSize,
+          null);
+    }
+
+    drawHealthBar(g2);
+  }
 
 }

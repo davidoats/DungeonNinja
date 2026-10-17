@@ -12,6 +12,7 @@ public class MonsterDefinition {
     private final int maxHealth;
     private final int attackDamage;
     private final double speed;
+    private final double knockbackResistance;
     private final double detectionRange;
     private final double attackRange;
     private final PathfindingStyle pathfindingStyle;
@@ -33,6 +34,7 @@ public class MonsterDefinition {
             String name,
             int maxHealth,
             int attackDamage,
+            double knockbackResistance,
             double speed,
             double detectionRange,
             double attackRange,
@@ -47,6 +49,7 @@ public class MonsterDefinition {
         this.attackRange = attackRange;
         this.pathfindingStyle = pathfindingStyle;
         this.spritePath = spritePath;
+        this.knockbackResistance = knockbackResistance;
     }
 
     public String getName() {
@@ -59,6 +62,10 @@ public class MonsterDefinition {
 
     public int getAttackDamage() {
         return attackDamage;
+    }
+
+    public double getKnockbackResistance() {
+        return knockbackResistance;
     }
 
     public double getSpeed() {

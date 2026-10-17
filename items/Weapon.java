@@ -18,6 +18,8 @@ public class Weapon {
   private final double tipY;
   private final double bladeBaseX;
   private final double bladeBaseY;
+  private final int damage;
+  private final double knockback;
   private final AnimationProfile animationProfile;
   private final BufferedImage sprite;
 
@@ -32,7 +34,7 @@ public class Weapon {
   public Weapon(String name, AnimationProfile animationProfile,
       BufferedImage sprite,
       double tipX, double tipY,
-      double bladeBaseX, double bladeBaseY) {
+      double bladeBaseX, double bladeBaseY, int damage, double knockback) {
 
     if (name == null || name.isBlank()) {
       throw new IllegalArgumentException("Weapon needs a name");
@@ -62,6 +64,13 @@ public class Weapon {
           "Blade base coordinates must be between 0 and 1");
     }
 
+    if (damage < 0 || !Double.isFinite(knockback) || knockback < 0) {
+    throw new IllegalArgumentException(
+            "Damage and knockback must be nonnegative."
+    );
+}
+
+    
     this.bladeBaseX = bladeBaseX;
     this.bladeBaseY = bladeBaseY;
     this.name = name;
@@ -69,6 +78,16 @@ public class Weapon {
     this.sprite = sprite;
     this.tipX = tipX;
     this.tipY = tipY;
+    this.damage = damage;
+    this.knockback = knockback;
+  }
+
+  public int getDamage() {
+    return damage;
+}
+
+  public double getKnockback() {
+    return knockback;
   }
 
   public double getTipX() {
