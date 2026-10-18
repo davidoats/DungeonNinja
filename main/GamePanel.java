@@ -76,9 +76,9 @@ public class GamePanel extends JPanel implements Runnable {
     monsters.clear();
 
     // Spawn our first zombie
-    monsters.add(new Zombie(this, GamePanel.tileSize * 5, GamePanel.tileSize * 11));
-    monsters.add(new Zombie(this, GamePanel.tileSize * 6, GamePanel.tileSize * 11));
-    monsters.add(new Zombie(this, GamePanel.tileSize * 6, GamePanel.tileSize * 12));
+    //monsters.add(new Zombie(this, GamePanel.tileSize * 5, GamePanel.tileSize * 11));
+    //monsters.add(new Zombie(this, GamePanel.tileSize * 6, GamePanel.tileSize * 11));
+    monsters.add(new Skeleton(this, GamePanel.tileSize * 6, GamePanel.tileSize * 12));
 
     if (level == 1) {
       //playMusic(0);

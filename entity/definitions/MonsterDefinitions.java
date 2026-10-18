@@ -19,11 +19,11 @@ public final class MonsterDefinitions {
             50, // Maximum health
             10, // Attack damage
             0.20, // 20% knockback resistance
-            2.0, // Movement speed
+            1.2, // Movement speed
             5.0, // Detection range (tiles)
             0.8, // Attack range (tiles)
             PathfindingStyle.ASTAR, // Navigation style
-            "/res/monsters/zombie.png" // Sprite path
+            "zombie" // Sprite path
     );
 
     public static final MonsterDefinition SKELETON = new MonsterDefinition(
@@ -31,11 +31,11 @@ public final class MonsterDefinitions {
             30,
             8,
             0.10,
-            2.5,
+            2.1,
             7.0,
-            5.0,
+            0.8,
             PathfindingStyle.ASTAR,
-            "/res/monsters/skeleton.png");
+            "skeleton");
 
     public static final MonsterDefinition SPIDER = new MonsterDefinition(
             "Spider",
@@ -46,5 +46,5 @@ public final class MonsterDefinitions {
             6.0,
             0.8,
             PathfindingStyle.DIRECT,
-            "/res/monsters/spider.png");
+            "spider");
 }

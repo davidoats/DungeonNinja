@@ -206,20 +206,6 @@ public abstract class Monster extends Entity {
     return true;
   }
 
-  public void getMonsterImage(String monsterImage) {
-    try {
-      up1 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_up_1.png"));
-      up2 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_up_2.png"));
-      down1 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_down_1.png"));
-      down2 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_down_2.png"));
-      left1 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_left_1.png"));
-      left2 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_left_2.png"));
-      right1 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_right_1.png"));
-      right2 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "_right_2.png"));
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
 
   protected void onDeath() {
     System.out.println(getClass().getSimpleName() + " defeated!");
@@ -413,26 +399,61 @@ public abstract class Monster extends Entity {
     return true;
   }
 
-  protected void loadSprite(String path) {
-    try (var stream = getClass().getResourceAsStream(path)) {
+  protected void loadSprite(String monsterImage) {
+    try {
 
-      if (stream == null) {
-        throw new IOException("Sprite not found: " + path);
-      }
-
-      monsterSprite = ImageIO.read(stream);
-
-      if (monsterSprite == null) {
-        throw new IOException("Invalid sprite: " + path);
-      }
+      up1 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "/"+ monsterImage + "_up_1.png"));
+      up2 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "/"+ monsterImage + "_up_2.png"));
+      down1 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "/"+ monsterImage + "_down_1.png"));
+      down2 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "/"+ monsterImage + "_down_2.png"));
+      left1 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "/"+ monsterImage + "_left_1.png"));
+      left2 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "/"+ monsterImage + "_left_2.png"));
+      right1 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "/"+ monsterImage + "_right_1.png"));
+      right2 = ImageIO.read(getClass().getResourceAsStream("/res/monsters/" + monsterImage + "/"+ monsterImage + "_right_2.png"));
 
     } catch (IOException e) {
       throw new IllegalStateException(
-          "Failed to load monster sprite: " + path, e);
+          "Failed to load monster sprite: ");
     }
   }
 
   protected void drawMonsterSprite(Graphics2D g2) {
+
+    switch (direction) {
+      case "up":
+        if (spriteNum == 1) {
+          monsterSprite = up1;
+        }
+        if (spriteNum == 2) {
+          monsterSprite = up2;
+        }
+        break;
+      case "down":
+        if (spriteNum == 1) {
+          monsterSprite = down1;
+        }
+        if (spriteNum == 2) {
+          monsterSprite = down2;
+        }
+        break;
+      case "left":
+        if (spriteNum == 1) {
+          monsterSprite = left1;
+        }
+        if (spriteNum == 2) {
+          monsterSprite = left2;
+        }
+
+        break;
+      case "right":
+        if (spriteNum == 1) {
+          monsterSprite = right1;
+        }
+        if (spriteNum == 2) {
+          monsterSprite = right2;
+        }
+        break;
+    }
 
     if (!isAlive() || monsterSprite == null) {
       return;

@@ -1,9 +1,7 @@
 
 package entity.monsters;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
-
 import main.GamePanel;
 import entity.Monster;
 import entity.definitions.MonsterDefinitions;
@@ -50,6 +48,7 @@ public class Zombie extends Monster {
 
       case CHASING:
         chasePlayer();
+        spriteCounter++;
         break;
 
       case ATTACKING:
@@ -60,6 +59,15 @@ public class Zombie extends Monster {
         // Recovery is currently handled by MonsterNavigator.
         chasePlayer();
         break;
+    }
+
+    if (spriteCounter > 35) {
+      if (spriteNum == 1) {
+        spriteNum = 2;
+      } else if (spriteNum == 2) {
+        spriteNum = 1;
+      }
+      spriteCounter = 0;
     }
   }
 
@@ -108,6 +116,6 @@ public class Zombie extends Monster {
     }
   }
 
-  
+
 
 }
